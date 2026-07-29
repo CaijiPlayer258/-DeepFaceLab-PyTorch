@@ -1,0 +1,16 @@
+4.0.1
+- 修复模型转换时 _data.dat 找不到导致配置错误
+- 修复旧模型 .npy 模块被识别为独立模型
+- 修复导出崩溃（autobackups_path 未初始化）
+- 新增 OS 级 stdin 重定向抑制交互回显
+- 新增配置丢失时自动从 old/ 恢复
+
+4.0.0
+- 初始公开版本
+- SAEHD / DeepFakeLarge / LIAELarge 训练器
+- XSeg / XSegLite 遮罩模型
+- HDR 色调映射 & 杜比视界转码
+- TRT 编译工具 & 模型导出
+- 自动更新检查（远程 version.txt 对比 + zip 下载）
+- PyQt-SiliconUI 图形界面
+- 默认 BF16 混合精度训练

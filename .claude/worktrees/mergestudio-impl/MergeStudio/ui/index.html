@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MergeStudio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <!-- Title Bar -->
+  <header id="title-bar">
+    <div class="title-bar__left">
+      <img src="logo.png" alt="MergeStudio" class="logo">
+      <span class="title-bar__name">MergeStudio</span>
+      <span class="title-bar__version">v1.0</span>
+    </div>
+    <div class="title-bar__right">
+      <span id="workspace-path" class="title-bar__path">No workspace</span>
+      <span id="status-indicator" class="title-bar__status">● idle</span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div id="main-content">
+    <!-- Left Sidebar -->
+    <aside id="sidebar">
+      <section id="model-section">
+        <div class="section-header">Models</div>
+        <div id="model-list"></div>
+      </section>
+      <section id="video-section">
+        <div class="section-header">Videos</div>
+        <div id="video-list"></div>
+      </section>
+    </aside>
+
+    <!-- Center: Preview Panels -->
+    <div id="preview-area">
+      <div id="preview-original" class="preview-panel">
+        <span class="preview-panel__label">Original</span>
+        <canvas id="canvas-original"></canvas>
+        <span class="preview-panel__info" id="frame-info"></span>
+      </div>
+      <div id="preview-detection" class="preview-panel preview-panel--active">
+        <span class="preview-panel__label">Detection</span>
+        <canvas id="canvas-detection"></canvas>
+        <span class="preview-panel__info" id="face-count"></span>
+      </div>
+      <div id="preview-swapped" class="preview-panel">
+        <span class="preview-panel__label">Swapped</span>
+        <canvas id="canvas-swapped"></canvas>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <aside id="params-panel">
+      <!-- Detection Settings -->
+      <section class="params-section">
+        <div class="params-section__header">
+          <span class="dot dot--accent"></span>Detection
+        </div>
+        <div class="params-section__body">
+          <label class="param-dropdown">Detector<select id="detector-select"></select></label>
+          <label class="param-dropdown">Landmarker<select id="landmarker-select"></select></label>
+          <label class="param-dropdown">Face Type<select id="face-type-select"></select></label>
+        </div>
+      </section>
+
+      <!-- Merge Settings -->
+      <section class="params-section">
+        <div class="params-section__header">
+          <span class="dot dot--accent"></span>Merge
+        </div>
+        <div id="merge-mode-btns" class="param-btn-group"></div>
+        <div id="merge-params" class="params-section__body"></div>
+      </section>
+
+      <!-- Face Database -->
+      <section class="params-section">
+        <div class="params-section__header">
+          <span class="dot dot--accent"></span>Face
+          <span id="face-db-count" class="params-section__count"></span>
+        </div>
+        <div id="face-db-list" class="params-section__body"></div>
+      </section>
+
+      <!-- Export -->
+      <section class="params-section params-section--export">
+        <button id="btn-export" class="btn-export">⚡ Batch Export</button>
+        <div class="export-options">
+          <label class="param-dropdown">Format<select id="export-format"></select></label>
+          <label class="param-dropdown">Quality<select id="export-quality"></select></label>
+        </div>
+        <span id="export-range" class="export-range">All (excl. cuts)</span>
+      </section>
+    </aside>
+  </div>
+
+  <!-- Timeline -->
+  <div id="timeline">
+    <!-- Frame Jumper -->
+    <div id="frame-jumper">
+      <span class="frame-jumper__label">Frame</span>
+      <div class="frame-jumper__input">
+        <input type="text" id="frame-input" value="0">
+        <span class="frame-jumper__sep">/</span>
+        <span id="frame-total">0</span>
+      </div>
+      <div id="transport-controls" class="transport">
+        <!-- SVG icons injected by JS -->
+      </div>
+      <div class="frame-jumper__right">
+        <span id="timecode">00:00.00</span>
+        <button id="zoom-out" class="icon-btn">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5" cy="5" r="3.5" stroke="#555" stroke-width="1"/><line x1="8" y1="8" x2="10" y2="10" stroke="#555" stroke-width="1" stroke-linecap="round"/><line x1="3.5" y1="5" x2="6.5" y2="5" stroke="#555" stroke-width="0.8"/></svg>
+        </button>
+        <button id="zoom-in" class="icon-btn">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5" cy="5" r="3.5" stroke="#555" stroke-width="1"/><line x1="8" y1="8" x2="10" y2="10" stroke="#555" stroke-width="1" stroke-linecap="round"/><line x1="3.5" y1="5" x2="6.5" y2="5" stroke="#555" stroke-width="0.8"/><line x1="5" y1="3.5" x2="5" y2="6.5" stroke="#555" stroke-width="0.8"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Ruler -->
+    <div id="timeline-ruler">
+      <div class="track-label"></div>
+      <div class="track-content" id="ruler-numbers"></div>
+    </div>
+
+    <!-- Track 1: Video -->
+    <div class="track track--video">
+      <div class="track-label">Video</div>
+      <div class="track-content" id="track-video">
+        <div class="playhead" id="playhead"></div>
+      </div>
+    </div>
+
+    <!-- Track 2: Faces -->
+    <div class="track track--faces">
+      <div class="track-label">Faces</div>
+      <div class="track-content" id="track-faces"></div>
+    </div>
+
+    <!-- Track 3: Cut -->
+    <div class="track track--cut">
+      <div class="track-label">Cut<button id="btn-add-cut" class="btn-cut-add">+</button></div>
+      <div class="track-content" id="track-cut"></div>
+    </div>
+
+    <!-- Legend -->
+    <div id="timeline-legend"></div>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/preview.js"></script>
+<script src="js/timeline.js"></script>
+<script src="js/params.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

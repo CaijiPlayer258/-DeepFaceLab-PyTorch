@@ -1,0 +1,392 @@
+[2026-06-21] cleanup: remove redundant DFM export step from XSeg export script
+[2026-06-21] fix: set dynamo=False in ONNX export to avoid .data split files
+[2026-06-21] fix: XSeg ONNX route send NCHW to match PyTorch export format
+[2026-06-21] docs: add TF vs PyTorch export differences for XSeg
+[2026-06-21] fix: match TF reference UpConvBlock padding (VALID+crop vs SAME)
+[2026-06-21] fix: XSeg weight loading, auto-detect ONNX layout, use verified reference ONNX
+[2026-06-21] fix: XSegNet weight loading and inference (tf-name lookup, .pth load, input resize)
+[2026-06-20] fix: TF-to-Torch conversion — 4 critical bugs fixed
+[2026-06-20] chore: add changelog view, update requirements, fix bilibili follow
+[2026-06-20] fix: add no-cache meta tags to force page refresh on every load
+[2026-06-20] fix: add no-cache meta tag to force page refresh on each load
+[2026-06-20] feat: move failed images to _failed_xseg/ folder after processing
+[2026-06-20] feat: auto-fallback to system Python when project Python lacks CUDA
+[2026-06-20] fix: use ASCII-only in batch files to avoid cmd.exe encoding issues
+[2026-06-20] fix: auto-register CUDA DLL directories for project-local Python
+[2026-06-20] fix: add os.add_dll_directory for CUDA/cuDNN paths for project-local Python
+[2026-06-20] chore: print ONNX providers and actual execution provider at startup
+[2026-06-20] perf: limit ONNX intra-op to 1 thread to prevent CPU oversubscription
+[2026-06-20] refactor: always use thread pool, remove process pool path
+[2026-06-19] fix: use shared counter + poll for tqdm to avoid threaded progress contention
+[2026-06-19] fix: ensure tqdm progress bar displays in Windows cmd
+[2026-06-19] perf: replace process pool with thread pool for CUDA mode, zero GPU contention
+[2026-06-19] perf: optimize mask save with direct APP15 byte manipulation (3.9x)
+[2026-06-19] feat: multiprocessing + CUDA ONNX inference in XSegAugmenter
+[2026-06-19] chore: multiple fixes and feature additions
+[2026-06-19] fix: add directory existence check to batch scripts
+[2026-06-19] feat: add tqdm progress bar to XSegAugmenter.run()
+[2026-06-19] feat: add DataAugmenter CLI entry point
+[2026-06-19] refactor: fix code quality issues in XSegAugmenter
+[2026-06-19] feat: add XSegAugmenter batch mask generator
+[2026-06-19] feat: add DataAugmenter module init
+[2026-06-19] docs: add XSegAugmenter implementation plan
+[2026-06-19] docs: add DataAugmenter XSeg design spec
+[2026-06-19] chore: update requirements.txt with comprehensive dependencies from venv audit
+[2026-06-19] fix: use sys.executable for Qt/torch DLL paths, fixes dist package layout
+[2026-06-19] chore: add PowerShell packaging/setup scripts, fix encoding issues
+[2026-06-19] chore: add universal setup.bat for end users, update package.bat with venv mode
+[2026-06-19] chore: update requirements.txt, add packaging script
+[2026-06-19] feat: Bilibili login gate + MergeStudio/MaskProcessor pages + DFLarge/LIAELarge export
+[2026-06-18] fix: restore sx/sy labels + fix switchView onload timing + socket error handling
+[2026-06-18] fix: save .dat before archiving .npy files
+[2026-06-18] fix: preserve original element styles when adding Linear theme
+[2026-06-18] feat: auto-archive old .npy weights to old/ on save
+[2026-06-18] fix: add color fallback to preview labels + browser cache refresh
+[2026-06-18] feat: apply Linear design style to all WebUI pages
+[2026-06-18] feat: apply Linear design style to WebUI trainer page
+[2026-06-18] feat: archive old .npy weights to src/old/ after conversion
+[2026-06-18] chore: add mask diagnostic scripts
+[2026-06-18] fix: remove SQLite caching from SampleLoaderV4
+[2026-06-18] fix: resolution-aware SQLite cache key
+[2026-06-18] fix: deep-copy generator output in generate_next_samples
+[2026-06-18] fix: deep-copy samples in onGetPreview to break generator view chains
+[2026-06-18] fix: two critical bugs
+[2026-06-18] chore: add mask inspection scripts
+[2026-06-18] fix: remove broken mask compositing overlay in Trainer
+[2026-06-18] fix: compute cell positions from image geometry directly
+[2026-06-18] fix: CV2 preview filenames and loss on correct columns
+[2026-06-18] fix: CV2 preview filenames at top, loss at bottom
+[2026-06-18] fix: revert CV2 filename drawing, mask index bounds check
+[2026-06-18] feat: per-sample loss for each preview row
+[2026-06-18] fix: JS empty-array truthiness hides loss labels
+[2026-06-18] fix: send preview_labels alongside clean images to WebUI
+[2026-06-18] fix: WebUI preview sends clean images (no CV2 text)
+[2026-06-18] chore: remove backward compat for old inter_AB/B name
+[2026-06-18] refactor: rename inter_AB/B → bottleneck_AB/B in LIAELarge
+[2026-06-18] fix: LIAELarge decoder detach unpack (3 values, not 2)
+[2026-06-18] fix: show src/dst filenames on 5-column preview
+[2026-06-18] feat: show mask branch as separate module in display
+[2026-06-18] fix: module status display reflects freeze options
+[2026-06-18] fix: split freeze_decoder_mask into freeze_decoderA_mask + B_mask
+[2026-06-18] feat: per-module freeze options (encoder/bottleneck/inter)
+[2026-06-18] feat: add freeze_decoder_mask option to both models
+[2026-06-18] feat: remember last viewed image index across sessions
+[2026-06-18] fix: offline GroundingDINO tokenizer loading, cache model init failures
+[2026-06-18] fix: add .ruler-number position:absolute CSS
+[2026-06-18] fix: unified mousedown/move/up for track drag (no separate click/drag)
+[2026-06-18] fix: remove pointer-events:none from playhead so it can receive events
+[2026-06-18] fix: use pointer events + setPointerCapture for playhead drag
+[2026-06-18] fix: direct pixel calc for playhead during drag (bypass _pxPerFrame)
+[2026-06-18] fix: exclude playhead from track click to prevent seek override
+[2026-06-18] fix: aselect use * (AND) for multi-segment audio sync
+[2026-06-18] fix: aselect filter for audio sync when cut segments present
+[2026-06-18] fix: replace concat with renumber; simpler encode approach
+[2026-06-18] fix: concat use absolute paths + ffconcat header
+[2026-06-18] fix: retry uses _retry_input; concat with absolute posix paths
+[2026-06-17] fix: always use concat when cuts present; remove [MergeW] frame log
+[2026-06-17] fix: playhead inline calc; cut DB after init_db
+[2026-06-17] chore: add cut_segments diagnostic print
+[2026-06-17] fix: timeline click TypeError; cut frame index offset (+1 for FFmpeg 1-based)
+[2026-06-17] fix: use _find_frame for cut deletion; concat demuxer for gaps
+[2026-06-17] fix: playhead drag use correct element ref; cut frames at Stage 1
+[2026-06-17] fix: playhead smooth drag, cut segments export, reduce logs
+[2026-06-17] feat: draggable playhead, cut segment export support
+[2026-06-17] feat: close export pages on success, show toast notification
+[2026-06-17] feat: DFL project support, full mask modes, seamless, download, UI polish
+[2026-06-17] fix: console.log progress debug, CUDA fallback, cross-model progress
+[2026-06-17] fix: progress tick counter (tick field) for frontend verification
+[2026-06-17] fix: add _tick counter to progress, cache-bust to API fetch
+[2026-06-17] fix: per-face tasks for smooth progress, initial progress before pool starts
+[2026-06-17] fix: NPY->JPG/PNG for swap/mask temp files (reduces disk usage 40x)
+[2026-06-17] fix: module-level init for all phase workers, traceback to console
+[2026-06-17] fix: module-level phase workers for multiprocessing, separate Swap/Mask/Merge stages
+[2026-06-17] feat: 7 progress bars — Swap, Mask, Merge separated with individual stages
+[2026-06-17] fix: pass work_dir + face_model_map to Stage 4, filter unused models
+[2026-06-17] fix: skip unassigned faces in swap phase (unchecked faces excluded)
+[2026-06-17] fix: phased pipeline speed display, card shadow via card-scroll wrapper
+[2026-06-17] fix: card shadow clipping via card-scroll wrapper, temp file cleanup
+[2026-06-17] fix: export completion signal, CSS shadow clipping
+[2026-06-17] revert: Stage 4 back to single-process sequential, keep SQLite + other stages
+[2026-06-17] feat: export settings — Swap Workers slider, passed through to pipeline
+[2026-06-17] Revert "feat: Stage 4 5-stage pipelining (Read->DFM->XSeg->Composite->Write)"
+[2026-06-17] Revert "fix: Stage 4 pipeline DFM/XSeg worker count uses cpu_count, not num_workers"
+[2026-06-17] Revert "fix: add debug prints to pipeline workers, multiprocessing.Event for subprocesses"
+[2026-06-17] Revert "fix: _mpcpu.Manager().Event for subprocess cancel signal"
+[2026-06-17] fix: _mpcpu.Manager().Event for subprocess cancel signal
+[2026-06-17] fix: add debug prints to pipeline workers, multiprocessing.Event for subprocesses
+[2026-06-17] fix: Stage 4 pipeline DFM/XSeg worker count uses cpu_count, not num_workers
+[2026-06-17] feat: Stage 4 5-stage pipelining (Read->DFM->XSeg->Composite->Write)
+[2026-06-17] fix: Stage 4 MP workers use CPU only (CUDA unavailable with 6 concurrent processes)
+[2026-06-17] fix: Stage 4 multiprocessing + CUDA with per-frame progress counter
+[2026-06-17] fix: Stage 3 SQLite concurrent write lock — add timeout=60 + synchronous=OFF
+[2026-06-17] feat: Stage 3 ArcFace matching multiprocessing
+[2026-06-17] feat: Stage 4 multiprocessing, Stage 5 source bitrate, match threshold=0.5
+[2026-06-17] feat: export pipeline v2 — ArcFace clustering, SQLite backend, per-model routing, multiprocess/thread pipeline
+[2026-06-16] fix: hide export layers at step-0, backward compat faceModelMap
+[2026-06-16] fix: faceModelMap keyed by full DB key, timeline overflow
+[2026-06-16] fix: use project-local ffmpeg at ./ffmpeg/ffmpeg.exe
+[2026-06-16] fix: face DB grouping, timeline clicks, blur overlay
+[2026-06-16] fix: batch export flow bugs
+[2026-06-16] fix: remove empty scrollbar track from timeline
+[2026-06-16] fix: layer-main flex layout overflow hidden
+[2026-06-16] fix: page layout stretched by fixed positioning + face DB population
+[2026-06-16] feat: integrate export flow end-to-end
+[2026-06-16] feat: add face embedding compute UI + endpoint
+[2026-06-16] feat: add export flow UI with Cover Flow transitions
+[2026-06-16] feat: add export pipeline (5 stages)
+[2026-06-16] feat: add export API endpoints
+[2026-06-16] feat: add face clustering module
+[2026-06-16] feat: add ArcFace embedder module
+[2026-06-16] docs: export flow design spec - Cover Flow transition + face DB page
+[2026-06-16] fix: default face model uses last selected, not first
+[2026-06-16] fix: revert to deletion-based face DB (remove unchecked flag)
+[2026-06-16] fix: loading waits for debug images + model key fallback
+[2026-06-16] fix: model key prefix mismatch + loading waits for image load
+[2026-06-16] perf: run merge in thread executor so detection poll processes immediately
+[2026-06-16] debug: log detect_mode value on each analyze call
+[2026-06-16] fix: sync detect-mode dropdown with state on init + video switch
+[2026-06-16] feat: new DeepFakeLarge & LIAELarge models (pure PyTorch)
+[2026-06-16] chore: default detect_mode to skip_dfl
+[2026-06-16] fix: DFL faces skip detector box, try/except around pickle
+[2026-06-16] fix: DFL skip mode coordinate scaling + out_size
+[2026-06-16] fix: DFL skip now reads source_rect/landmarks/mat from embedded metadata
+[2026-06-16] fix: DFL skip mode generates proper 68-point landmarks + transform
+[2026-06-16] fix: _dfl_aligned_path check at line 358 (string .exists())
+[2026-06-16] fix: _dfl_aligned_path returns str, use Path() for .exists()
+[2026-06-16] fix: DFL aligned path detection with flexible zero-padding
+[2026-06-16] fix: DFL aligned filename uses 7-digit not 6-digit
+[2026-06-16] fix: add DFL debug logging path check
+[2026-06-15] feat: DFL standard project support
+[2026-06-14] feat: current frame faces at top, saved faces scrollable at bottom
+[2026-06-14] fix: face DB click disappearance + unchecked flag in selected
+[2026-06-14] fix: face DB entries persist even when unchecked
+[2026-06-14] fix: brace mismatch in _renderFaceItemDiv, restore togglePlay
+[2026-06-14] fix: model loading spinner in sidebar, not video panel
+[2026-06-14] fix: thumbnail transform_mat computed from full-res landmarks
+[2026-06-14] fix: face thumbnails use affine-transformed aligned face
+[2026-06-14] fix: per-model input_size tracking, cache clear on model switch
+[2026-06-14] fix: _build_debug_vis broadcast error with mismatched sizes
+[2026-06-14] fix: face_model_map key type mismatch (int vs string)
+[2026-06-14] feat: multi-model select + per-face model picker
+[2026-06-14] feat: backend infra for multi-model + per-face model assignment
+[2026-06-14] fix: model loading always selected first .dfm regardless of name
+[2026-06-14] fix: remerge debug_urls init + remove old concat code
+[2026-06-14] feat: debug vis returned as individual images, browser handles layout
+[2026-06-14] fix: add h_gap between debug rows
+[2026-06-14] fix: cache poll 5s with dedup, debug 2-column grid
+[2026-06-14] fix: resize all face thumbnails to 128x128
+[2026-06-14] fix: prediction cache dict (not list), thumbnail min-size
+[2026-06-14] fix: face list maintains position regardless of check state
+[2026-06-14] fix: remove dead merge_faces lines in remerge
+[2026-06-14] fix: prediction cache index mismatch with selected_faces
+[2026-06-14] fix: clear face database on video switch
+[2026-06-14] fix: UnboundLocalError debug_frames when no faces detected
+[2026-06-14] fix: UnboundLocalError from local 'import numpy' in function scope
+[2026-06-14] fix: multi-face debug shows all faces horizontally
+[2026-06-14] fix: face DB click uses remergeFrame instead of loadFrame
+[2026-06-14] fix: restore missing for-loop body + 20ms event loop yield
+[2026-06-14] fix: force video src refresh on every play with version busting
+[2026-06-14] fix: add explicit video path param to frame endpoint
+[2026-06-14] fix: event loop yield after detection save + cache headers
+[2026-06-14] fix: debug inverted colors (uint8 overflow), video switch pre-load
+[2026-06-14] fix: debug state lost on mode switch, video switch cache + src
+[2026-06-14] fix: debug shows 3 masks, button in mode group
+[2026-06-14] feat: debug as toggle, respects face_scale + color_transfer
+[2026-06-14] fix: debug merged panel shows actual mask-weighted blend
+[2026-06-14] fix: debug mode shows visualization, add merged-rgb panel
+[2026-06-14] fix: remerge double-normalization + face_type mismatch
+[2026-06-14] fix: remerge reads correct frame via VideoCapture
+[2026-06-14] fix: remerge syntax error, add error handling per face
+[2026-06-14] perf: cache XSeg mask results in remerge
+[2026-06-14] perf: cache DFM predictions across remerge calls
+[2026-06-14] feat: remerge endpoint skips detection on param changes
+[2026-06-14] fix: defensive resize in multi-face compositing
+[2026-06-14] fix: landmark dot radius 2→4 for visibility
+[2026-06-14] fix: eliminate duplicate landmark/rect drawing
+[2026-06-14] fix: prevent poll from overwriting detection landmarks
+[2026-06-14] fix: poll detection immediately on analyze, no 500ms delay
+[2026-06-14] fix: selectModel no longer auto-loads, detection renders before merge
+[2026-06-14] fix: per-panel loading overlays, selectModel no longer auto-loads video
+[2026-06-14] feat: loading overlay, fix auto-load on open, version prep
+[2026-06-14] fix: non-quick seekFrame stops playback first
+[2026-06-14] fix: cancel buffering listeners on pause/seek
+[2026-06-14] fix: reimplement <video> with 10s pre-buffer before play
+[2026-06-14] fix: remove <video> element, use disk-backed predecode cache
+[2026-06-14] fix: pause requires _playInterval sentinel
+[2026-06-14] fix: transport controls stop playback before seek
+[2026-06-14] feat: GPU-accelerated 4K playback via native <video> element
+[2026-06-14] fix: sequential frame pre-cache for 4K decode speed
+[2026-06-14] fix: preview cache dir cleared in-place, no rmtree
+[2026-06-14] fix: auto-clear preview cache on startup
+[2026-06-14] fix: 4K playback performance - LRU frame cache + quality tiers
+[2026-06-14] fix: face track data, remove auto-scan, clear pycache
+[2026-06-14] fix: landmark dots green→dark purple (75,45,175)
+[2026-06-14] fix: video track click-to-seek coordinates
+[2026-06-14] fix: address all reported bugs
+[2026-06-14] fix: batch fix remaining UI/backend bugs
+[2026-06-14] fix: pause triggers analysis, resolution selector in timeline, path input moved left
+[2026-06-14] fix(ui): workspace path moved to left, add resolution selector near Frame
+[2026-06-14] fix(mergestudio): remove XSegLite threshold, clip all masks to 0-1
+[2026-06-14] fix(mergestudio): always clip float XSeg input to 0-1 before cvtColor
+[2026-06-14] fix(mergestudio): clip XSeg input to 0-1 before cvtColor to handle warp artifacts
+[2026-06-14] debug(mergestudio): add dst_xseg stats to CMD output
+[2026-06-14] fix(mergestudio): XSeg extractor input double-normalization, detect 0-1 vs 0-255 range
+[2026-06-14] fix(mergestudio): XSegLite 0.5 threshold like MaskProcessor
+[2026-06-14] fix(mergestudio): XSeg models expect RGB input, add BGR→RGB conversion
+[2026-06-14] fix(mergestudio): debug mode vis dimensions, use wrk_face_mask_a_0 directly
+[2026-06-14] fix(mergestudio): add debug mode to mode_dict so config accepts it
+[2026-06-14] feat(mergestudio): rename showmask to debug, replace raw-predict button
+[2026-06-14] fix(showmask): early return, safe None handling, proper sizing
+[2026-06-14] feat(mergestudio): add showmask mode to visualize pred/dst/prd*dst masks
+[2026-06-13] debug(mergestudio): add mask source and final mask diagnostics to CMD output
+[2026-06-13] fix(mergestudio): XSeg/XSegLite seg_mode now overrides model masks for all mask_mode values
+[2026-06-13] fix(mergestudio): remove double /255 in predictor, ct_functions scope fix
+[2026-06-13] refactor(mergestudio): rewrite MergeMaskedFace matching original DFL flow exactly, 0-1 range
+[2026-06-13] fix(mergestudio): add missing onnxruntime import for XSeg model loading
+[2026-06-13] refactor(mergestudio): predictor returns (face, pred_mask, dst_mask) tuple, no module globals
+[2026-06-13] fix(mergestudio): model-only masks, no hull/landmarks in combine
+[2026-06-13] fix(mergestudio): hull blend 1.0 (full hull), face diff debug, fix UnboundLocalError
+[2026-06-13] debug(mergestudio): add composed face diff at 416x416, increase hull blend to 0.7
+[2026-06-13] fix(mergestudio): increase hull blend from 0.3 to 0.7 for better face coverage
+[2026-06-13] fix(mergestudio): blend model masks with hull for full face coverage, seg_mode in config, XSeg uses seg_mode
+[2026-06-13] fix(mergestudio): cache-busting for preview images, consistent seg/mask mode spacing
+[2026-06-13] fix(mergestudio): blur_mask bidirectional slider, absolute value handling, module import fix
+[2026-06-13] fix(mergestudio): mask values already 0-1 range, remove /255 division + add diagnostic print
+[2026-06-13] fix(mergestudio): mask dead-value detection fallback to full mask, SegMode buttons, mask_mode buttons
+[2026-06-13] fix(mergestudio): mask_mode=4 uses pred*dst (no hull), default prd×dst button active
+[2026-06-13] fix(mergestudio): default mask_mode=1 (dst), mask mode as button group
+[2026-06-13] fix(mergestudio): XSeg output resized back to face size, mask_mode 6-9 handle xseg_mask
+[2026-06-13] feat(mergestudio): timeline zoom - ruler numbers, playhead, click-to-seek all respect visible range
+[2026-06-13] feat(mergestudio): XSeg/XSegLite ONNX support with seg_mode selector
+[2026-06-13] feat(mergestudio): bidirectional sliders with center marker, model mask outputs passed to merger
+[2026-06-13] feat(mergestudio): slider ranges 0-based (0 at left), split mask mode into SegMode + MaskMode dropdowns
+[2026-06-13] fix(mergestudio): slider change triggers re-analysis, mask mode change listener, explain bipolar sliders
+[2026-06-13] fix(mergestudio): compute hull mask on original frame then warp to face space, fix mask coordinate system
+[2026-06-13] fix(mergestudio): use ALL model outputs - celeb_face (3ch, index 1) instead of face_mask (1ch, index 0)
+[2026-06-13] fix(mergestudio): scale predictor output to 0-255 range to match merge engine
+[2026-06-13] fix(mergestudio): color_transfer import as module to avoid function shadowing
+[2026-06-13] fix(mergestudio): handle flat-first-dim image shape [H*W, H, C] -> [H, W, C]
+[2026-06-13] fix(mergestudio): handle single-channel model output by replicating to 3 channels
+[2026-06-13] fix(mergestudio): debug raw model output shape, squeeze fix for 4D warp
+[2026-06-13] fix(mergestudio): store models/videos in state so selection re-render works
+[2026-06-13] fix(mergestudio): warp fallback, debug print, selected/disabled list styling
+[2026-06-13] fix(mergestudio): handle predictor output shape, resize to warp size, validate before warp
+[2026-06-13] fix(mergestudio): module-level _model_input_size, global variable, spacing
+[2026-06-13] fix(mergestudio): dynamic model input size detection, NHWC/NCHW support, section spacing
+[2026-06-13] fix(mergestudio): convert string face_type to enum for get_transform_mat, CSS spacing and format dropdown layout
+[2026-06-13] fix(mergestudio): missing closing brace in params.js causing syntax error
+[2026-06-13] fix(mergestudio): revert to native select with CSS animations, remove custom dropdown
+[2026-06-13] fix(mergestudio): restore dropdown options rendering, fix CSS conflict
+[2026-06-13] fix(mergestudio): custom dropdown init after params, animated panel, hide native select
+[2026-06-13] feat(mergestudio): custom animated dropdown replacing native select
+[2026-06-13] fix(mergestudio): diagnostic prints for model loading, format dropdown right-aligned, dropdown focus animation
+[2026-06-13] fix(mergestudio): model loading uses workspace path, FACE section shows saved faces across frames, dropdown width
+[2026-06-13] fix(mergestudio): face DB persistence, model click loading, concentric circles, dropdown width
+[2026-06-13] feat(mergestudio): face thumbnails in FACE section, detect + display on each frame
+[2026-06-13] feat(mergestudio): draw landmarks + alignment rect on detection panel, re-analyze on param change
+[2026-06-13] fix(mergestudio): use ORTDeviceInfo from xlib.onnxruntime for modelhub detector compatibility
+[2026-06-13] fix(mergestudio): add YOLOv8 alias to match frontend dropdown value
+[2026-06-13] debug(mergestudio): add print in create() to see DETECTORS state
+[2026-06-13] fix(mergestudio): add sys.path insert at module level before any modelhub import
+[2026-06-13] fix(mergestudio): add project root to sys.path in factory for modelhub internal imports
+[2026-06-13] fix(mergestudio): load modelhub by absolute file path to avoid sys.path/uvicorn issues
+[2026-06-13] fix(mergestudio): use importlib for modelhub imports to avoid conflict with onnx PyPI package
+[2026-06-13] fix(mergestudio): add project root to sys.path so modelhub is found
+[2026-06-13] fix(mergestudio): image URLs instead of base64, detection/swapped preview endpoints, remove extra playhead
+[2026-06-13] fix(mergestudio): timeline click seeking, playhead visibility, playback optimized (no analysis during play)
+[2026-06-13] fix(mergestudio): video selection API, play/pause, auto analyze on frame load
+[2026-06-13] fix(mergestudio): maintain aspect ratio in preview panels
+[2026-06-13] fix(mergestudio): workspace Change button like MaskProcessor
+[2026-06-13] fix(mergestudio): workspace input field, video preview 400, slider spacing
+[2026-06-13] fix(mergestudio): model grouping, video click, slider alignment
+[2026-06-13] fix(mergestudio): API 405, equal tracks, unselectable text, dropdown icons, export format fix
+[2026-06-13] fix(mergestudio): UI layout - taller tracks, larger right panel, interactive sliders, drag-drop, workspace selection
+[2026-06-13] fix(mergestudio): lazy modelhub imports so server starts without modelhub installed
+[2026-06-13] chore(mergestudio): add run_mergestudio.bat for quick testing
+[2026-06-13] feat(mergestudio): implement model_converter - .pth uses project model export, .npy provides instructions
+[2026-06-13] feat(mergestudio): complete all stubs - full mask modes 0-9, color transfers, post-processing, FaceAvatar, export pipeline, preview ONNX integration
+[2026-06-13] feat(mergestudio): Phase 6 - ArcFace, model converter, export-to-dfm route
+[2026-06-13] feat(mergestudio): Phase 5 - export pipeline, SSE routes, timeline routes
+[2026-06-13] feat(mergestudio): Phase 4 - UI components (timeline.js, params.js, preview.js)
+[2026-06-13] feat(mergestudio): Phase 3 - detection pipeline (factory, landmarks, pipeline)
+[2026-06-13] feat(mergestudio): Phase 2 - merge engine (config, merger, model_loader, preview routes)
+[2026-06-13] feat(mergestudio): complete Phase 1 - app.js, schemas, project/open route
+[2026-06-13] feat(mergestudio): add UI skeleton - index.html, style.css, api.js, logo
+[2026-06-13] feat(mergestudio): add __main__.py, server factory, and stub API routes
+[2026-06-13] feat(mergestudio): create directory structure and package init
+[2026-06-13] docs: add MergeStudio implementation plan
+[2026-06-13] docs: fix .dfl model types - .pth and .npy with different ONNX export paths
+[2026-06-13] docs: add Chinese version of MergeStudio design spec
+[2026-06-13] docs: add MergeStudio design specification
+[2026-06-13] fix: scale seg_ie_polys coords to image res, replace numpy._core in pickle for old DFL compat
+[2026-06-13] fix: keep xseg_mask as ndarray, only convert other numpy types
+[2026-06-13] fix: recursive numpy-to-plain conversion for all nested structures
+[2026-06-13] fix: also convert numpy scalars (float64, int32, bool_) for DFL compat
+[2026-06-13] fix: convert all numpy arrays to plain types for DFL compatibility
+[2026-06-13] fix: only convert seg_ie_polys for DFL compatibility, keep xseg_mask as-is
+[2026-06-13] fix: save() calls dump() before opening file, prevents 0-byte corruption
+[2026-06-13] fix: handle struct.error in save, fallback without polys, fix import order
+[2026-06-13] fix: revert numpy conversion, use >I for chunk size, handle bytes in get_xseg_mask
+[2026-06-13] fix: skip xseg_mask conversion, keep as ndarray for OpenCV
+[2026-06-13] fix: handle uint8 numpy arrays as bytes, others as lists
+[2026-06-13] fix: convert numpy arrays to lists before pickle for DFL compatibility
+[2026-06-13] fix: use pickle protocol 2 for numpy 2.x compatibility
+[2026-06-13] fix: 400ms cooldown for PageUp/Down
+[2026-06-13] fix: debounce PageUp/Down, ignore repeat when loading
+[2026-06-13] fix: ensureMask after setMask(null) in BiSeNet handler
+[2026-06-13] fix: remove stray brace breaking BiSeNet handler
+[2026-06-13] feat: AI tools clear mask before generating
+[2026-06-13] fix: GroundedSAM uses mergeMaskB64 too
+[2026-06-13] fix: SAM click sets mask to 1.0 instead of increment
+[2026-06-13] Revert "fix: _applyMaskB64 merges instead of replacing, prevents async race"
+[2026-06-13] fix: clear mask before loading DFLJPG
+[2026-06-13] fix: _applyMaskB64 merges instead of replacing, prevents async race
+[2026-06-13] fix: SAM mask fill blocks instead of points to prevent gaps
+[2026-06-13] fix: capture canvas.mode at SAM click time, not result time
+[2026-06-13] fix: undo brush stroke on two-finger pinch
+[2026-06-13] fix: remove Save button, brush slider next to mode toggle
+[2026-06-13] fix: tighter title bar layout in portrait
+[2026-06-13] fix: compact title bar in portrait mode
+[2026-06-13] fix: simplify pen hints, remove extra touch point on two-finger close
+[2026-06-13] fix: portrait mode status bar below mode-bar, horizontal
+[2026-06-13] fix: move pen hints to mode-bar tool-hint area
+[2026-06-13] feat: two-finger tap to close pen, pinch to resize brush
+[2026-06-13] fix: right-panel full width in portrait mode
+[2026-06-13] fix: portrait layout uses CSS Grid, bottom panel always at bottom
+[2026-06-13] fix: bottom panel pushed to bottom with margin-top auto
+[2026-06-13] fix: portrait layout - flex-wrap, fixed 130px bottom, toolbar left, canvas shrinks
+[2026-06-13] fix: portrait uses flex column layout, no position fixed
+[2026-06-13] fix: portrait bottom panel uses fixed position, 35vh
+[2026-06-13] feat: undo button on toolbar, touch event support
+[2026-06-13] fix: portrait right-panel uses max-height 30vh instead of fixed 140px
+[2026-06-13] fix: portrait layout - toolbar stays left, right panel wraps below, status bar vertical right
+[2026-06-13] fix: use @media portrait query instead of image-based detection
+[2026-06-13] feat: portrait layout for tall images
+[2026-06-12] feat: exclude (red) areas fade out on commit
+[2026-06-12] fix: animation loop keeps running during mask fade-in
+[2026-06-12] fix: wait for mask decode before clearing loading
+[2026-06-12] fix: mask fade-in with anim loop, commit dark pulse
+[2026-06-12] feat: commit success flash, mask fade-in for load
+[2026-06-12] fix: shimmer rotation via delta tracking, mask fade-in
+[2026-06-12] refactor: simpler fade-out, no snapshot needed
+[2026-06-12] fix: animation loop keeps running during loading and fade-out
+[2026-06-12] feat: fade-out transition, faster shimmer arc
+[2026-06-12] feat: loading overlay fade-in animation
+[2026-06-12] feat: shimmer loading animation, add loading to all AI tools
+[2026-06-12] feat: add logo icon to title bar
+[2026-06-12] fix: Ctrl multi-point, ignore keyboard repeat
+[2026-06-12] fix: pen cursor, clear Ctrl points after predict
+[2026-06-12] fix: pen fillPolygon uses absolute value (0.8/-0.8) instead of incremental
+[2026-06-12] chore: default Grounded prompt to face., default path to data_src
+[2026-06-12] fix: re-export XSegLite ONNX with correct weight loading
+[2026-06-12] fix: XSeg use ONNX first, .npy fallback
+[2026-06-12] fix: remove double sigmoid from XSeg, threshold XSegLite
+[2026-06-12] fix: XSeg sigmoid, pen coord scale, default 1024, cleanup
+[2026-06-12] feat: mask resolution selector, fix BiSeNet
+[2026-06-12] fix: mask coordinate scaling for 256x256 standard
+[2026-06-12] before: fix mask coordinate scaling
+[2026-06-12] debug: add image origin/center markers
+[2026-06-12] debug: add coordinate marker test
+[2026-06-12] debug: add render overlay to _doRender
+[2026-06-12] fix: brush test - direct canvas draw + mask system test
+[2026-06-12] feat: MaskProcessor redesign

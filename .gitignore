@@ -1,0 +1,87 @@
+__pycache__/
+*.pyc
+.superpowers/
+*.pth
+*.pt
+*.onnx
+*.npy
+*.dat
+workspace/
+dev/
+*.onnx.*
+python/
+pack_source.bat
+pack_source.py
+modelhub/onnx/tensorrt_engines/
+modelhub/onnx/FaceParser/
+bf16_optimization_guide.md
+tools/bench_*
+*.engine
+1.log
+
+# Large binaries
+ffmpeg/*.exe
+
+# Research/temp
+hypothesis/
+*.log
+*.cache
+
+# IDE
+.idea/
+
+# CI cache
+core/biliauth/.wbi_cache.json
+
+# Test images
+workspace/test_*.png
+workspace/test_*.jpg
+
+# Model weights
+*.onnx
+*.onnx.*
+*.pth
+*.pt
+*.npy
+*.dfm
+*.engine
+*.dat
+
+# Binaries
+*.exe
+*.dll
+*.so
+
+# Python runtime
+python/
+
+# Workspace data
+workspace/
+
+# Large dirs
+ffmpeg/
+dev/
+hypothesis/
+
+# Temp
+*.log
+*.cache
+*.zip
+*.rar
+*.7z
+node_modules/
+ui/user/
+使用说明.txt
+PyQt-SiliconUI-main/
+docs/
+
+# Experimental/research tools (orphan scripts)
+tools/bench_*
+tools/build_*
+tools/convert_*
+tools/onnx_*
+tools/split_*
+tools/verify_*
+tools/TF_TO_TORCH_*
+tools/__pycache__/
+FaceCompleter/
