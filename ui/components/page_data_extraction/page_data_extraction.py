@@ -303,7 +303,7 @@ class DataExtractionPage(SiPage):
                         self.resize_input.setPlaceholderText("0=禁用，推荐720")
                         self.resize_input.setText("720")
                         self.resize_input.resize(200, 48)
-                        self.resize_input.setToolTip("输入图像预缩放宽度（像素），0表示禁用。当原始分辨率小于此值时自动禁用")
+                        self.resize_input.setToolTip("输入图像预缩放宽度（像素），0表示禁用。当原始分辨率小于此值时自动禁用。\n仅 Sliding Window 模式生效；One-Stage 模式整图缩放，此值无效。")
                         
                         # 检测角度输入框
                         self.detection_angles_input = SiLabeledLineEdit(self)
@@ -337,6 +337,52 @@ class DataExtractionPage(SiPage):
                         row3.addWidget(self.resize_input)
                         row3.addWidget(self.detection_angles_input)
                         row3.addWidget(self.skip_frames_input)
+                    # 第三行B：检测模式 + 缩放方式
+                    with createDenseContainer(container, QBoxLayout.LeftToRight) as row3b:
+                        self.input_mode_combobox = SiCapsuleComboBox(self)
+                        self.input_mode_combobox.setTitle("检测模式")
+                        self.input_mode_combobox.setMinimumHeight(36)
+                        self.input_mode_combobox.addItems([
+                            "One-Stage (整图缩放·快)",
+                            "Sliding Window (滑窗扫描)",
+                        ])
+                        self.input_mode_combobox.setCurrentText("One-Stage (整图缩放·快)")
+                        self.input_mode_combobox.setToolTip(
+                            "检测模式：\n"
+                            "- One-Stage: 整图缩放到输入尺寸一次检测（快）\n"
+                            "- Sliding Window: 固定窗口滑动扫描，逐窗口检测后合并（适合大图小脸）\n"
+                            "适合滑窗的检测器：BlazeFace、MTCNN\n"
+                            "适合 One-Stage 的检测器：RetinaFace、DamoFD、TinyMog、YOLO 系"
+                        )
+                        self.input_mode_combobox.currentIndexChanged.connect(self._on_input_mode_changed)
+                        row3b.addWidget(self.input_mode_combobox)
+                        # 缩放方式
+                        self.resize_mode_combobox = SiCapsuleComboBox(self)
+                        self.resize_mode_combobox.setTitle("缩放方式")
+                        self.resize_mode_combobox.setMinimumHeight(36)
+                        self.resize_mode_combobox.addItems([
+                            "LetterBox (保纵横比)",
+                            "WarpAffine (拉伸·最快)",
+                        ])
+                        self.resize_mode_combobox.setCurrentText("LetterBox (保纵横比)")
+                        self.resize_mode_combobox.setToolTip(
+                            "缩放方式（作用于 One-Stage 整图缩放 和 Sliding Window 边缘窗口）：\n"
+                            "- LetterBox: 等比缩放+补边，不变形（默认）\n"
+                            "- WarpAffine: 直接拉伸填满，速度最快，但变形"
+                        )
+                        row3b.addWidget(self.resize_mode_combobox)
+                        # 输入尺寸
+                        self.input_size_input = SiLabeledLineEdit(self)
+                        self.input_size_input.setTitle("窗口/输入尺寸")
+                        self.input_size_input.setPlaceholderText("默认640")
+                        self.input_size_input.setText("640")
+                        self.input_size_input.resize(160, 48)
+                        self.input_size_input.setToolTip(
+                            "One-Stage 的整图缩放尺寸 / Sliding Window 的扫描窗口边长（默认640）。\n"
+                            "非 8 倍数会自动规整到 8 的倍数。"
+                        )
+                        row3b.addWidget(self.input_size_input)
+                        row3b.layout().addStretch()
                     # 第四行：KPS对齐开关
                     with createDenseContainer(container, QBoxLayout.LeftToRight) as row4:
                         self.kps_align_checkbox = SiCheckBox(self)
@@ -404,6 +450,10 @@ class DataExtractionPage(SiPage):
     # ── 杜比视界转码 ─────────────────────────────────────
     def _toggle_dovi_bitrate(self):
         self.dovi_bitrate_input.setEnabled(self.dovi_bitrate_combobox.currentText() == "手动")
+
+    def _on_input_mode_changed(self):
+        # One-Stage 模式整图缩放，预缩放无意义 → 禁用
+        self.resize_input.setEnabled("Sliding Window" in self.input_mode_combobox.currentText())
 
     def _get_dovi_params(self, target: str):
         if '709' in target:
@@ -526,14 +576,33 @@ class DataExtractionPage(SiPage):
             'Google-mediapipe': ' [FaceMesh ⚠左偏]',
         }
 
+        # 每个检测器适合的检测模式（One-Stage / Sliding Window）
+        detector_mode_notes = {
+            'BlazeFace': ' [适合滑窗]',
+            'MTCNN': ' [适合滑窗]',
+            'RetinaFace_10g': ' [适合One-Stage]',
+            'RetinaFace_500m': ' [适合One-Stage]',
+            'DamoFD': ' [适合One-Stage]',
+            'TinyMog': ' [适合One-Stage]',
+            'MogFace': ' [适合One-Stage]',
+            'YoloV5Face': ' [适合One-Stage]',
+            'YoloV8Face': ' [适合One-Stage]',
+            'YoloV11nFace': ' [适合One-Stage]',
+            'CenterFace': ' [适合One-Stage]',
+            'S3FD': ' [适合One-Stage]',
+            'ULFD': ' [适合One-Stage]',
+            'LightweightFD': ' [适合One-Stage]',
+        }
+
         det_note = detector_notes.get(detector, '')
         lm_note = landmark_notes.get(landmark, '')
+        mode_note = detector_mode_notes.get(detector, '')
 
         face_type = self.face_type_combobox.currentText()
         mode = self.process_mode_combobox.currentText()
         self.run_extractor_button.setToolTip(
             f"运行人脸提取\n"
-            f"检测: {detector}{det_note} | 标记: {landmark}{lm_note} | 脸型: {face_type} | 模式: {mode}"
+            f"检测: {detector}{det_note}{mode_note} | 标记: {landmark}{lm_note} | 脸型: {face_type} | 模式: {mode}"
         )
 
     def _create_task_monitor(self, button, completed_description: str, interrupted_description: str = "用户强制中断了一个任务"):
@@ -714,6 +783,25 @@ class DataExtractionPage(SiPage):
         except ValueError:
             print("警告: 无效的预缩放尺寸，已重置为0（禁用）")
             resize_value = 0
+
+        # 获取检测模式 / 缩放方式 / 尺寸
+        _mode_map = {
+            "One-Stage (整图缩放·快)": "one_stage",
+            "Sliding Window (滑窗扫描)": "sliding_window",
+        }
+        input_mode = _mode_map.get(self.input_mode_combobox.currentText(), "one_stage")
+        _resize_map = {
+            "LetterBox (保纵横比)": "letterbox",
+            "WarpAffine (拉伸·最快)": "warp",
+        }
+        resize_mode = _resize_map.get(self.resize_mode_combobox.currentText(), "letterbox")
+        _size_str = self.input_size_input.text().strip()
+        try:
+            input_size = int(_size_str) if _size_str.isdigit() else 640
+            if input_size < 64:
+                input_size = 640
+        except ValueError:
+            input_size = 640
         
         # 获取处理模式
         process_mode = self.process_mode_combobox.currentText()
@@ -778,6 +866,7 @@ class DataExtractionPage(SiPage):
                 cmd.extend(["-r", str(resize_value)])
             if not self.kps_align_checkbox.isChecked():
                 cmd.append("--no-kps-align")
+            cmd.extend(["--input-mode", input_mode, "--resize-mode", resize_mode, "--input-size", str(input_size)])
             cmd.extend(["--ffmpeg-frame-size", _frame_size])
             cmd.extend(["--ffmpeg-cmd"] + _ffmpeg_cmd)
         else:
@@ -797,6 +886,7 @@ class DataExtractionPage(SiPage):
                 cmd.extend(["--skip-frames", str(skip_frames)])
             if not self.kps_align_checkbox.isChecked():
                 cmd.append("--no-kps-align")
+            cmd.extend(["--input-mode", input_mode, "--resize-mode", resize_mode, "--input-size", str(input_size)])
             if is_video_batch:
                 cmd.extend(["-m", "video"])
         

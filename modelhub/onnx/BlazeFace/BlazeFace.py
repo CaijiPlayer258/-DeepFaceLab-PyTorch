@@ -34,7 +34,8 @@ class BlazeFace:
                 _w.warn(f'TRT fallback: {e}')
 
     def extract(self, img, threshold=0.5, fixed_window=0,
-                enable_alignment=True, return_frect=False, return_landmarks=False):
+                enable_alignment=True, return_frect=False, return_landmarks=False,
+                input_mode='one_stage', resize_mode='letterbox', input_size=None):
         if img.ndim == 3:
             img = img[np.newaxis, ...]
         N, H, W = img.shape[0], img.shape[1], img.shape[2]

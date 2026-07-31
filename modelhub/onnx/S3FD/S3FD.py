@@ -42,7 +42,8 @@ class S3FD:
                 import warnings as _w
                 _w.warn(f'TRT fallback: {e}')
 
-    def extract(self, img : np.ndarray, threshold=0.95, fixed_window=0, min_face_size=40):
+    def extract(self, img : np.ndarray, threshold=0.95, fixed_window=0, min_face_size=40,
+                input_mode='one_stage', resize_mode='letterbox', input_size=None):
         """
 
             img     HW,HWC,NHWC     [0..255]

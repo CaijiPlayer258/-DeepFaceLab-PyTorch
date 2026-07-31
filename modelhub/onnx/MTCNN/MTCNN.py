@@ -210,7 +210,8 @@ class MTCNN:
         return bounding_boxes.T
 
     def extract(
-        self, img: np.ndarray, threshold: float = 0.5, fixed_window: int = 0
+        self, img: np.ndarray, threshold: float = 0.5, fixed_window: int = 0,
+        input_mode: str = 'one_stage', resize_mode: str = 'letterbox', input_size: int = None
     ) -> List[List[float]]:
         """
         Detect faces in an image using the MTCNN cascade.

@@ -1,3 +1,10 @@
+4.0.2
+- 新增 Sliding Window / One-Stage 检测模式选择
+- 新增 LetterBox / WarpAffine 缩放方式选择
+- 新增窗口/输入尺寸参数（Sliding Window 窗口边长 / One-Stage 缩放尺寸）
+- One-Stage 模式自动跳过预缩放（整图缩放无意义）
+- GUI 增加模式选择控件与检测器适用性提示
+
 4.0.1
 - 修复模型转换时 _data.dat 找不到导致配置错误
 - 修复旧模型 .npy 模块被识别为独立模型

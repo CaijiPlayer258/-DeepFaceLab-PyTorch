@@ -5,6 +5,7 @@ import numpy as np
 from xlib import math as lib_math
 from xlib.onnxruntime import (InferenceSession_with_device, ORTDeviceInfo,
                               get_available_devices_info)
+from ..det_preprocess import preprocess, map_back, sliding_window_detect
 
 
 class RetinaFace:
@@ -33,10 +34,12 @@ class RetinaFace:
             _trt_path = find_trt_engine(str(path), self.MODEL_SIZES[model_name]['path'].replace('.onnx', ''))
         except Exception:
             pass
+        self._use_trt = False
         if _trt_path:
             try:
                 from xlib.trt import TRTInferenceSession
                 self._sess = TRTInferenceSession(_trt_path)
+                self._use_trt = True
             except Exception as e:
                 import warnings as _w
                 _w.warn(f'TRT fallback: {e}')
@@ -107,34 +110,37 @@ class RetinaFace:
 
         return scores_list, bboxes_list, kpss_list
 
-    def _detect_candidates(self, img, input_size):
-        """Letterbox image and run detection."""
-        H, W = img.shape[:2]
-        im_ratio = H / W
-        model_ratio = input_size[1] / input_size[0]
-
-        if im_ratio > model_ratio:
-            new_height = input_size[1]
-            new_width = int(new_height / im_ratio)
-        else:
-            new_width = input_size[0]
-            new_height = int(new_width * im_ratio)
-
-        det_scale = new_height / H
-        resized = cv2.resize(img, (new_width, new_height))
-        det_img = np.zeros((input_size[1], input_size[0], 3), dtype=np.uint8)
-        det_img[:new_height, :new_width, :] = resized
-
-        scores_list, bboxes_list, kpss_list = self._forward(det_img)
-
+    def _detect_window(self, win):
+        """单窗口检测（滑窗用），返回窗口内坐标 boxes (N,5)。"""
+        scores_list, bboxes_list, kpss_list = self._forward(win)
         if not scores_list or sum(s.size for s in scores_list) == 0:
-            return np.empty((0, 5)), np.empty((0, 5, 2))
-
+            return np.empty((0, 5))
         scores = np.concatenate(scores_list)
         order = scores.argsort()[::-1]
-        bboxes = np.concatenate(bboxes_list, axis=0) / det_scale
-        kpss = np.concatenate(kpss_list, axis=0) / det_scale
+        bboxes = np.concatenate(bboxes_list, axis=0)
+        pre_det = np.hstack((bboxes, scores[:, np.newaxis])).astype(np.float32)
+        return pre_det[order, :]
 
+    def _detect_candidates(self, img, input_size=640, input_mode='one_stage', resize_mode='letterbox'):
+        """按 input_mode 检测：one_stage 整图缩放 / sliding_window 滑窗扫描。"""
+        # TRT engine 固定 640×640 输出，强制 640 尺寸
+        if self._use_trt:
+            input_size = 640
+
+        if input_mode == 'sliding_window':
+            boxes = sliding_window_detect(img, int(input_size), resize_mode,
+                                          self._detect_window, pad_value=0)
+            return boxes, np.empty((0, 5, 2))
+
+        # one_stage
+        det_img, meta = preprocess(img, resize_mode, int(input_size), pad_value=0)
+        scores_list, bboxes_list, kpss_list = self._forward(det_img)
+        if not scores_list or sum(s.size for s in scores_list) == 0:
+            return np.empty((0, 5)), np.empty((0, 5, 2))
+        scores = np.concatenate(scores_list)
+        order = scores.argsort()[::-1]
+        bboxes = map_back(np.concatenate(bboxes_list, axis=0), meta)
+        kpss = map_back(np.concatenate(kpss_list, axis=0), meta)
         pre_det = np.hstack((bboxes, scores[:, np.newaxis])).astype(np.float32)
         pre_det = pre_det[order, :]
         kpss = kpss[order, :, :]
@@ -159,11 +165,12 @@ class RetinaFace:
             order = order[np.where(ovr <= self.nms_thresh)[0] + 1]
         return keep
 
-    def extract(self, img, threshold=0.5, fixed_window=0, min_face_size=20):
+    def extract(self, img, threshold=0.5, fixed_window=0, min_face_size=20,
+                input_mode='one_stage', resize_mode='letterbox', input_size=640):
         """Detect faces, return list of [l,t,r,b]."""
         if threshold != 0.5:
             self.det_thresh = threshold
-        pre_det, kpss = self._detect_candidates(img, (640, 640))
+        pre_det, kpss = self._detect_candidates(img, input_size, input_mode, resize_mode)
         if len(pre_det) == 0:
             return [[]]
         keep = self._nms(pre_det)
@@ -177,11 +184,12 @@ class RetinaFace:
                 faces.append((float(x1), float(y1), float(x2), float(y2)))
         return [faces]
 
-    def extract_with_landmarks(self, img, threshold=0.5, fixed_window=0, min_face_size=20):
+    def extract_with_landmarks(self, img, threshold=0.5, fixed_window=0, min_face_size=20,
+                               input_mode='one_stage', resize_mode='letterbox', input_size=640):
         """Detect faces with 5-point landmarks."""
         if threshold != 0.5:
             self.det_thresh = threshold
-        pre_det, kpss = self._detect_candidates(img, (640, 640))
+        pre_det, kpss = self._detect_candidates(img, input_size, input_mode, resize_mode)
         if len(pre_det) == 0:
             return [[]]
         keep = self._nms(pre_det)
@@ -197,12 +205,14 @@ class RetinaFace:
                 faces.append((float(x1), float(y1), float(x2), float(y2), lm))
         return [faces]
 
-    def extract_with_kps(self, img, threshold=0.5, fixed_window=0, min_face_size=20):
+    def extract_with_kps(self, img, threshold=0.5, fixed_window=0, min_face_size=20,
+                         input_mode='one_stage', resize_mode='letterbox', input_size=640):
         """Detect faces returning both boxes and 5-point keypoints.
         Returns: [(box, kps_or_none), ...] where box=[l,t,r,b], kps=[[x,y],...x5]
         Keypoints order: [left_eye, right_eye, nose, left_mouth, right_mouth]
         """
-        raw = self.extract_with_landmarks(img, threshold, fixed_window, min_face_size)
+        raw = self.extract_with_landmarks(img, threshold, fixed_window, min_face_size,
+                                          input_mode, resize_mode, input_size)
         if not raw or not raw[0]:
             return []
         results = []

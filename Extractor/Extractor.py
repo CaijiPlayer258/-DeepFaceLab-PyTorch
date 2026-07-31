@@ -193,15 +193,18 @@ class LandmarkFactory:
             raise
 
 
-def detect_faces_multi_angle(detector, image: np.ndarray, angles: List[int] = [0]) -> List[Tuple[int, int, int, int]]:
+def detect_faces_multi_angle(detector, image: np.ndarray, angles: List[int] = [0],
+                             input_mode: str = 'one_stage', resize_mode: str = 'letterbox', input_size: int = 640) -> List[Tuple[int, int, int, int]]:
     """
     Detect faces from multiple rotation angles and merge results
-    
+
     Args:
         detector: Face detector instance
         image: Input image (BGR)
         angles: List of rotation angles in degrees (clockwise): [0, 90, 180, 270]
-        
+        input_mode: Detection input preprocessing ('letterbox' | 'warp' | 'mix')
+        input_size: Square input size for letterbox/warp modes
+
     Returns:
         List of face rects with angle info: [(angle, l, t, r, b), ...]
     """
@@ -227,9 +230,10 @@ def detect_faces_multi_angle(detector, image: np.ndarray, angles: List[int] = [0
         try:
             # YoloV8Face doesn't support fixed_window parameter
             if isinstance(detector, YoloV8Face):
-                results = detector.extract(rotated_img)
+                results = detector.extract(rotated_img, input_mode=input_mode, resize_mode=resize_mode, input_size=input_size)
             else:
-                results = detector.extract(rotated_img, fixed_window=0)
+                results = detector.extract(rotated_img, fixed_window=0,
+                                           input_mode=input_mode, resize_mode=resize_mode, input_size=input_size)
             if not results or len(results) == 0:
                 continue
             
@@ -345,11 +349,12 @@ def detect_and_align_on_resized(detector, landmarker, image: np.ndarray, fixed_w
                                 image_size_fixed: Optional[int] = None,
                                 face_type_str: str = 'whole_face',
                                 detection_angles: List[int] = None,
-                                kps_align: bool = True) -> List[Dict]:
+                                kps_align: bool = True,
+                                input_mode: str = 'one_stage', resize_mode: str = 'letterbox', input_size: int = 640) -> List[Dict]:
     """
     Complete face processing pipeline on (possibly resized) image
     Returns normalized results that can be mapped to original image
-    
+
     Args:
         detector: Face detector
         landmarker: Landmark detector
@@ -358,7 +363,9 @@ def detect_and_align_on_resized(detector, landmarker, image: np.ndarray, fixed_w
         image_size_fixed: Fixed output size for alignment
         face_type_str: Face type string
         detection_angles: List of angles for multi-angle detection [0, 90, 180, 270]
-        
+        input_mode: Detection input preprocessing ('letterbox' | 'warp' | 'mix')
+        input_size: Square input size for letterbox/warp modes
+
     Returns:
         List of dicts with normalized coordinates and transformation matrices
     """
@@ -367,7 +374,8 @@ def detect_and_align_on_resized(detector, landmarker, image: np.ndarray, fixed_w
     working_image = image
     
     # Step 1: Resize if needed
-    if fixed_window > 0 and w_orig > fixed_window:
+    # One-Stage 模式下检测器会把整图缩放到 input_size，预缩放无意义（4K 也会被 letterbox），跳过
+    if input_mode != 'one_stage' and fixed_window > 0 and w_orig > fixed_window:
         scale_factor = w_orig / fixed_window
         new_h = int(h_orig / scale_factor)
         new_w = fixed_window
@@ -381,7 +389,8 @@ def detect_and_align_on_resized(detector, landmarker, image: np.ndarray, fixed_w
         # Single angle detection (fast path)
         # Use extract_with_kps when kps_align enabled and detector supports it
         if kps_align and isinstance(detector, (RetinaFace, DamoFD, TinyMog)):
-            raw = detector.extract_with_kps(working_image)
+            raw = detector.extract_with_kps(working_image,
+                                            input_mode=input_mode, resize_mode=resize_mode, input_size=input_size)
             if not raw:
                 return []
             # raw is [(box, kps_or_none), ...]
@@ -390,11 +399,14 @@ def detect_and_align_on_resized(detector, landmarker, image: np.ndarray, fixed_w
         else:
             # Original path — no keypoints
             if isinstance(detector, (YoloV8Face, RetinaFace)):
-                results = detector.extract(working_image)
+                results = detector.extract(working_image,
+                                           input_mode=input_mode, resize_mode=resize_mode, input_size=input_size)
             elif isinstance(detector, (BlazeFace, YoloV5Face, CenterFace, S3FD)):
-                results = detector.extract(working_image, fixed_window=0)
+                results = detector.extract(working_image, fixed_window=0,
+                                           input_mode=input_mode, resize_mode=resize_mode, input_size=input_size)
             else:
-                results = detector.extract(working_image)
+                results = detector.extract(working_image,
+                                           input_mode=input_mode, resize_mode=resize_mode, input_size=input_size)
             if not results or len(results) == 0:
                 return []
             faces_raw = results[0] if isinstance(results[0], list) else results
@@ -402,7 +414,8 @@ def detect_and_align_on_resized(detector, landmarker, image: np.ndarray, fixed_w
             kps_list = [None] * len(faces)
     else:
         # Multi-angle detection — always uses original extract (no kps support)
-        faces_with_angle = detect_faces_multi_angle(detector, working_image, detection_angles)
+        faces_with_angle = detect_faces_multi_angle(detector, working_image, detection_angles,
+                                                    input_mode=input_mode, resize_mode=resize_mode, input_size=input_size)
         if not faces_with_angle:
             return []
         faces = faces_with_angle
@@ -1434,7 +1447,8 @@ def process_single_image(
     fixed_window: int = 0,
     face_type: str = 'whole_face',
     detection_angles: List[int] = None,
-    kps_align: bool = True
+    kps_align: bool = True,
+    input_mode: str = 'one_stage', resize_mode: str = 'letterbox', input_size: int = 640
 ) -> int:
     """
     Process single image using new approach: detect+landmark on resized, align on original
@@ -1452,7 +1466,8 @@ def process_single_image(
         # NEW APPROACH: Complete pipeline on resized image
         face_data_list = detect_and_align_on_resized(
             detector, landmarker, image, fixed_window, image_size_fixed, face_type, detection_angles,
-            kps_align=kps_align
+            kps_align=kps_align,
+            input_mode=input_mode, resize_mode=resize_mode, input_size=input_size
         )
         
         if not face_data_list:
@@ -1522,6 +1537,7 @@ def process_single_image_threadsafe(
     face_type: str = 'whole_face',
     detection_angles: List[int] = None,
     kps_align: bool = True,
+    input_mode: str = 'one_stage', resize_mode: str = 'letterbox', input_size: int = 640,
     metadata_cache: Dict = None,
     metadata_lock = None
 ) -> int:
@@ -1538,7 +1554,8 @@ def process_single_image_threadsafe(
         # NEW APPROACH: Complete pipeline on resized image
         face_data_list = detect_and_align_on_resized(
             detector, landmarker, image, fixed_window, image_size_fixed, face_type, detection_angles,
-            kps_align=kps_align
+            kps_align=kps_align,
+            input_mode=input_mode, resize_mode=resize_mode, input_size=input_size
         )
         
         if not face_data_list:
@@ -1612,6 +1629,7 @@ def process_images(
     face_type: str = 'whole_face',  # Face type for extraction
     detection_angles: List[int] = None,  # Multi-angle detection
     kps_align: bool = True,
+    input_mode: str = 'one_stage', resize_mode: str = 'letterbox', input_size: int = 640,
 ):
     """处理图片文件夹 - 并行处理"""
     print(S('PROCESSING_IMAGES', input_path))
@@ -1655,6 +1673,8 @@ def process_images(
             face_type=face_type,
             detection_angles=detection_angles,
             kps_align=kps_align,
+            input_mode=input_mode,
+            input_size=input_size,
         )
         print(S('DEBUG_COMPLETE', debug_dir))
     else:
@@ -1682,6 +1702,9 @@ def process_images(
                     face_type,  # Face type for extraction
                     detection_angles,  # Multi-angle detection
                     kps_align,  # kps_align
+                    input_mode,  # input preprocessing mode
+                    resize_mode,  # resize mode
+                    input_size,  # input square size
                     metadata_cache,  # 共享缓存
                     metadata_lock  # 线程锁
                 ): (img_path, idx)
@@ -1752,6 +1775,7 @@ def process_video(
     debug: bool = False,
     skip_frames: int = 0,  # 帧跳跃：0=逐帧，1=隔1帧...
     kps_align: bool = True,
+    input_mode: str = 'one_stage', resize_mode: str = 'letterbox', input_size: int = 640,
 ):
     """Process video file - single process with GPU acceleration"""
     print(S('PROCESSING_VIDEO', input_path))
@@ -1821,7 +1845,8 @@ def process_video(
             # NEW APPROACH: Complete pipeline on resized image
             face_data_list = detect_and_align_on_resized(
                 detector, landmarker, frame, fixed_window, image_size, face_type, detection_angles,
-                kps_align=kps_align
+                kps_align=kps_align,
+                input_mode=input_mode, resize_mode=resize_mode, input_size=input_size
             )
             
             # Extract face rects for inter-frame sorting
@@ -2086,6 +2111,7 @@ def process_video_ffmpeg_pipe(
     detection_angles: List[int] = None,
     debug: bool = False,
     kps_align: bool = True,
+    input_mode: str = 'one_stage', resize_mode: str = 'letterbox', input_size: int = 640,
 ):
     """从 FFmpeg 管道读取 rawvideo，内存中完成人脸提取，不写中间帧到磁盘。"""
     print(f"[FFmpeg Pipe] 启动: {' '.join(ffmpeg_cmd[:8])}...")
@@ -2130,7 +2156,8 @@ def process_video_ffmpeg_pipe(
         try:
             face_data_list = detect_and_align_on_resized(
                 detector, landmarker, frame, fixed_window, image_size,
-                face_type, detection_angles, kps_align=kps_align
+                face_type, detection_angles, kps_align=kps_align,
+                input_mode=input_mode, resize_mode=resize_mode, input_size=input_size
             )
             faces = [fd['face_rect'] for fd in face_data_list]
 
@@ -2212,6 +2239,7 @@ def process_video_directory(
     debug: bool = False,
     skip_frames: int = 0,
     kps_align: bool = True,
+    input_mode: str = 'one_stage', resize_mode: str = 'letterbox', input_size: int = 640,
 ):
     """Process all video files in a directory - batch mode"""
     print(S('PROCESSING_VIDEO_DIR', input_dir))
@@ -2303,7 +2331,8 @@ def process_video_directory(
                     # Complete pipeline on resized image
                     face_data_list = detect_and_align_on_resized(
                         detector, landmarker, frame, fixed_window, image_size, face_type, detection_angles,
-                        kps_align=kps_align
+                        kps_align=kps_align,
+                        input_mode=input_mode, resize_mode=resize_mode, input_size=input_size
                     )
                     
                     # Extract face rects for inter-frame sorting
@@ -2527,6 +2556,32 @@ def parse_args():
     )
 
     parser.add_argument(
+        '--input-mode',
+        type=str,
+        choices=['one_stage', 'sliding_window'],
+        default='one_stage',
+        help='Detection mode: one_stage (resize whole image to input size, fast, default), '
+             'sliding_window (scan image in fixed-size windows, better for small faces in '
+             'large images). See GUI tooltip for per-detector suitability.'
+    )
+
+    parser.add_argument(
+        '--resize-mode',
+        type=str,
+        choices=['letterbox', 'warp'],
+        default='letterbox',
+        help='Resize behavior: letterbox (aspect+pad, default), warp (direct stretch, fastest). '
+             'Applies to one_stage whole-image resize and sliding_window edge windows.'
+    )
+
+    parser.add_argument(
+        '--input-size',
+        type=int,
+        default=640,
+        help='Square input/window size (default 640).'
+    )
+
+    parser.add_argument(
         '-m', '--mode',
         type=str,
         choices=['auto', 'video', 'image'],
@@ -2662,6 +2717,9 @@ def main():
         
         image_size = args.size  # None means dynamic
         
+        input_mode = getattr(args, 'input_mode', 'one_stage')
+        resize_mode = getattr(args, 'resize_mode', 'letterbox')
+        input_size = getattr(args, 'input_size', 640)
         print(S('CONFIGURATION'))
         print(f"  {S('INPUT_PATH')}: {input_path}")
         print(f"  {S('OUTPUT_PATH')}: {output_path}")
@@ -2673,6 +2731,7 @@ def main():
         print(f"  Quick Test: {quick_test}")
         print(f"  Frame Skip: {skip_frames}")
         print(f"  KPS Align: {args.kps_align}")
+        print(f"  Input Mode: {input_mode} | Resize Mode: {resize_mode} | Input Size: {input_size}")
         print()
         
         confirm = input(S('CONFIRM_START')).strip().lower()
@@ -2750,9 +2809,12 @@ def main():
 
         # Get face type
         face_type = args.face_type if hasattr(args, 'face_type') else 'whole_face'
-        
+
         image_size = args.size
-        
+
+        input_mode = getattr(args, 'input_mode', 'one_stage')
+        resize_mode = getattr(args, 'resize_mode', 'letterbox')
+        input_size = getattr(args, 'input_size', 640)
         print(S('CONFIGURATION'))
         print(f"  {S('INPUT_PATH')}: {input_path}")
         print(f"  {S('OUTPUT_PATH')}: {output_path}")
@@ -2764,6 +2826,7 @@ def main():
         print(f"  Quick Test: {quick_test}")
         print(f"  Frame Skip: {skip_frames}")
         print(f"  KPS Align: {args.kps_align}")
+        print(f"  Input Mode: {input_mode} | Resize Mode: {resize_mode} | Input Size: {input_size}")
         print()
         
         confirm = input(S('CONFIRM_START')).strip().lower()
@@ -2811,6 +2874,9 @@ def main():
             quick_test = False
             skip_frames = getattr(args, 'skip_frames', 0)
 
+        input_mode = getattr(args, 'input_mode', 'one_stage')
+        resize_mode = getattr(args, 'resize_mode', 'letterbox')
+        input_size = getattr(args, 'input_size', 640)
         print(S('CMD_MODE'))
         print(f"  {S('INPUT_PATH')}: {input_path}")
         print(f"  {S('OUTPUT_PATH')}: {output_path}")
@@ -2822,6 +2888,7 @@ def main():
         print(f"  Quick Test: {quick_test}")
         print(f"  Frame Skip: {skip_frames}")
         print(f"  KPS Align: {args.kps_align}")
+        print(f"  Input Mode: {input_mode} | Resize Mode: {resize_mode} | Input Size: {input_size}")
         print()
         
         if not input_path.exists():
@@ -2874,7 +2941,8 @@ def main():
                 args.ffmpeg_cmd, _frame, output_path,
                 detector_name, landmark_name, device_info,
                 image_size, fixed_window, face_type, detection_angles,
-                debug=quick_test, kps_align=args.kps_align
+                debug=quick_test, kps_align=args.kps_align,
+                input_mode=args.input_mode, resize_mode=args.resize_mode, input_size=args.input_size
             )
             return
 
@@ -2883,18 +2951,18 @@ def main():
         
         if input_path.is_file():
             # Single video file
-            process_video(input_path, output_path, detector_name, landmark_name, device_info, image_size, fixed_window, face_type, detection_angles, debug=quick_test, skip_frames=skip_frames, kps_align=args.kps_align)
+            process_video(input_path, output_path, detector_name, landmark_name, device_info, image_size, fixed_window, face_type, detection_angles, debug=quick_test, skip_frames=skip_frames, kps_align=args.kps_align, input_mode=args.input_mode, resize_mode=args.resize_mode, input_size=args.input_size)
         elif input_path.is_dir():
             # Directory - check mode
             if processing_mode == 'video':
                 # Force video directory mode
-                process_video_directory(input_path, output_path, detector_name, landmark_name, device_info, image_size, fixed_window, face_type, detection_angles, debug=quick_test, skip_frames=skip_frames, kps_align=args.kps_align)
+                process_video_directory(input_path, output_path, detector_name, landmark_name, device_info, image_size, fixed_window, face_type, detection_angles, debug=quick_test, skip_frames=skip_frames, kps_align=args.kps_align, input_mode=args.input_mode, resize_mode=args.resize_mode, input_size=args.input_size)
             elif processing_mode == 'image':
                 # Force image mode
                 process_images(input_path, output_path, detector_name, landmark_name, device_info,
                              image_size, debug=quick_test, fixed_window=fixed_window,
                              face_type=face_type, detection_angles=detection_angles,
-                             kps_align=args.kps_align)
+                             kps_align=args.kps_align, input_mode=args.input_mode, resize_mode=args.resize_mode, input_size=args.input_size)
             else:
                 # Auto mode - detect content type
                 video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv'}
@@ -2906,25 +2974,25 @@ def main():
                 if video_files and not image_files:
                     # Only videos found
                     print(S('AUTO_DETECT_VIDEO_MODE'))
-                    process_video_directory(input_path, output_path, detector_name, landmark_name, device_info, image_size, fixed_window, face_type, detection_angles, debug=quick_test, skip_frames=skip_frames, kps_align=args.kps_align)
+                    process_video_directory(input_path, output_path, detector_name, landmark_name, device_info, image_size, fixed_window, face_type, detection_angles, debug=quick_test, skip_frames=skip_frames, kps_align=args.kps_align, input_mode=args.input_mode, resize_mode=args.resize_mode, input_size=args.input_size)
                 elif image_files and not video_files:
                     # Only images found
                     print(S('AUTO_DETECT_IMAGE_MODE'))
                     process_images(input_path, output_path, detector_name, landmark_name, device_info,
                                  image_size, debug=quick_test, fixed_window=fixed_window,
                                  face_type=face_type, detection_angles=detection_angles,
-                                 kps_align=args.kps_align)
+                                 kps_align=args.kps_align, input_mode=args.input_mode, resize_mode=args.resize_mode, input_size=args.input_size)
                 elif video_files and image_files:
                     # Both found - ask user
                     print(S('MIXED_CONTENT_DETECTED', len(video_files), len(image_files)))
                     choice = input(S('SELECT_PROCESSING_MODE')).strip().lower()
                     if choice == 'v' or choice == 'video':
-                        process_video_directory(input_path, output_path, detector_name, landmark_name, device_info, image_size, fixed_window, face_type, detection_angles, debug=quick_test, skip_frames=skip_frames, kps_align=args.kps_align)
+                        process_video_directory(input_path, output_path, detector_name, landmark_name, device_info, image_size, fixed_window, face_type, detection_angles, debug=quick_test, skip_frames=skip_frames, kps_align=args.kps_align, input_mode=args.input_mode, resize_mode=args.resize_mode, input_size=args.input_size)
                     else:
                         process_images(input_path, output_path, detector_name, landmark_name, device_info,
                                      image_size, debug=quick_test, fixed_window=fixed_window,
                                      face_type=face_type, detection_angles=detection_angles,
-                                     kps_align=args.kps_align)
+                                     kps_align=args.kps_align, input_mode=args.input_mode, resize_mode=args.resize_mode, input_size=args.input_size)
                 else:
                     # No supported files
                     print(S('NO_SUPPORTED_FILES'))
