@@ -1,1 +1,0 @@
-from .interact import interact

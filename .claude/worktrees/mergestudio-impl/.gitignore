@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-.superpowers/
-*.pth
-*.pt
-*.onnx
-*.npy
-*.dat
-workspace/

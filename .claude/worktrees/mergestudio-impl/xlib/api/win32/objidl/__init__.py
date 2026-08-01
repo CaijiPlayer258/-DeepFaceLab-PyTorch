@@ -1,1 +1,0 @@
-from .objidl import IEnumMoniker, IMoniker, IPersistStream, IPersist, IStream
