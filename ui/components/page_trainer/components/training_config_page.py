@@ -1604,7 +1604,7 @@ class TrainingConfigChildPage(SiChildPage):
             'models_opt_on_gpu': bool(_(info, 'models_opt_on_gpu', True)),
             'use_fast_generator': bool(_(info, 'use_fast_generator', False)),
             'write_preview_history': bool(_(info, 'write_preview_history', False)),
-            'pretrain': bool(_(info, 'pretrain', False)),
+            'pretrain': False,  # pretrain 已停用：无论读到什么一律强制 False
             'lr_dropout': str(_(info, 'lr_dropout', 'n')),
             'lr_policy': str(_(info, 'lr_policy', 'CosineAnnealingLR')),
             'true_face_power': str(_(info, 'true_face_power', '0.0')),
@@ -1680,7 +1680,7 @@ class TrainingConfigChildPage(SiChildPage):
         self.models_opt_on_gpu_switch.setChecked(bool(cfg.get('models_opt_on_gpu', True)))
         self.use_fast_generator_switch.setChecked(bool(cfg.get('use_fast_generator', False)))
         self.write_preview_history_switch.setChecked(bool(cfg.get('write_preview_history', False)))
-        self.pretrain_switch.setChecked(bool(cfg.get('pretrain', False)))
+        self.pretrain_switch.setChecked(False)  # pretrain 已停用：强制关闭（不读取旧配置）
 
         # 文本输入框（新）
         self.crash_threshold_input.setText(str(cfg.get('crash_threshold', '0.0')))
@@ -1785,7 +1785,7 @@ class TrainingConfigChildPage(SiChildPage):
                 elif key == 'write_preview_history':
                     self.config_data[key] = self.write_preview_history_switch.isChecked()
                 elif key == 'pretrain':
-                    self.config_data[key] = self.pretrain_switch.isChecked()
+                    self.config_data[key] = False  # pretrain 已停用：强制 False
                 elif key == 'random_hsv_power':
                     self.config_data[key] = self.random_hsv_power_input.text()
                 elif key == 'crash_threshold':

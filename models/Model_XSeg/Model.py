@@ -25,14 +25,15 @@ class XSegModel(ModelBase):
                 self.set_iter(0)
 
         default_face_type          = self.options['face_type']          = self.load_or_def_option('face_type', 'wf')
-        default_pretrain           = self.options['pretrain']           = self.load_or_def_option('pretrain', False)
+        default_pretrain           = self.options['pretrain']           = False  # pretrain 已停用：无论读到什么一律强制 False
 
         if self.is_first_run():
             self.options['face_type'] = io.input_str ("人脸类型", default_face_type, ['h','mf','f','wf','head'], help_message="Half / mid face / full face / whole face / head。请与深度换脸模型的 face_type 保持一致。" ).lower()
 
         if self.is_first_run() or ask_override:
             self.ask_batch_size(4, range=[2,16])
-            self.options['pretrain'] = io.input_bool ("启用预训练模式（pretrain）", default_pretrain)
+            # pretrain 已停用：强制 False，不再提供询问入口
+            self.options['pretrain'] = False
         
         if not self.is_exporting and (self.options['pretrain'] and self.get_pretraining_data_path() is None):
             raise Exception("未定义 pretraining_data_path")

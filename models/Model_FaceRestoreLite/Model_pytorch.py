@@ -48,7 +48,7 @@ class FaceRestoreLiteModel(ModelBase):
     def on_initialize_options(self):
         self.options['resolution'] = self.load_or_def_option('resolution', 256)
         self.options['use_bf16'] = self.load_or_def_option('use_bf16', False)
-        self.options['pretrain'] = self.load_or_def_option('pretrain', False)
+        self.options['pretrain'] = False  # pretrain 已停用：无论读到什么一律强制 False
         self.options['lr_cos'] = self.load_or_def_option('lr_cos', 10000)
 
         if self.is_first_run():

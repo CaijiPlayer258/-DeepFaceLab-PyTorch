@@ -48,7 +48,7 @@ class XSegLiteModel(ModelBase):
                 self.set_iter(0)
 
         default_face_type = self.options['face_type'] = self.load_or_def_option('face_type', 'wf')
-        default_pretrain = self.options['pretrain'] = self.load_or_def_option('pretrain', False)
+        default_pretrain = self.options['pretrain'] = False  # pretrain 已停用：无论读到什么一律强制 False
         default_use_eca = self.options['use_eca'] = self.load_or_def_option('use_eca', True)
         default_use_bf16 = self.options['use_bf16'] = self.load_or_def_option('use_bf16', False)
         default_loader_skip = self.options['loader_skip'] = self.load_or_def_option('loader_skip', False)
@@ -69,7 +69,8 @@ class XSegLiteModel(ModelBase):
                 help_message="256 is standard. 512/1024 for production. Model is fully convolutional.",
             )
             self.ask_batch_size(4, range=None)
-            self.options['pretrain'] = io.input_bool("Enable pretrain mode", default_pretrain)
+            # pretrain 已停用：强制 False，不再提供询问入口
+            self.options['pretrain'] = False
             self.options['use_bf16'] = io.input_bool("Use BF16 mixed precision training", default_use_bf16)
             self.options['use_edge'] = io.input_bool(
                 "Use edge-enhanced input (Sobel edge as 4th channel)", False,

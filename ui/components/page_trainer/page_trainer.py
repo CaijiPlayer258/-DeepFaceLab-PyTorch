@@ -855,7 +855,7 @@ class TrainerPage(SiPage):
                 'uniform_yaw': options.get('uniform_yaw', '?'),
                 'blur_out_mask': options.get('blur_out_mask', '?'),
                 'masked_training': options.get('masked_training', '?'),
-                'pretrain': options.get('pretrain', '?'),
+                'pretrain': False,  # pretrain 已停用：强制 False
                 'models_opt_on_gpu': options.get('models_opt_on_gpu', '?'),
                 'use_fast_generator': options.get('use_fast_generator', '?'),
                 'gradient_checkpointing': options.get('gradient_checkpointing', '?'),
@@ -1027,7 +1027,7 @@ class TrainerPage(SiPage):
                 'uniform_yaw': options.get('uniform_yaw', '?'),
                 'blur_out_mask': options.get('blur_out_mask', '?'),
                 'masked_training': options.get('masked_training', '?'),
-                'pretrain': options.get('pretrain', '?'),
+                'pretrain': False,  # pretrain 已停用：强制 False
                 'gradient_checkpointing': options.get('gradient_checkpointing', '?'),
                 # freeze options
                 'freeze_encoder': options.get('freeze_encoder', False),

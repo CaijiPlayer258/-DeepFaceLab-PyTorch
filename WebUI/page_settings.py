@@ -161,7 +161,7 @@ const TRAIN_FIELDS = [
   ['gan_dims', 'GAN 维度', null],
   ['true_face_power', 'True Face 强度', v => parseFloat(v).toFixed(4)],
   ['use_fast_generator', '快速生成器', v => v ? '&#10003;' : '&#10007;'],
-  ['pretrain', '预训练模式', v => v ? '&#10003;' : '&#10007;'],
+  ['pretrain', '预训练模式（已停用，强制关闭）', () => '&#10007;'],
   ['gradient_checkpointing', '梯度检查点', v => v ? '&#10003;' : '&#10007;'],
 ];
 

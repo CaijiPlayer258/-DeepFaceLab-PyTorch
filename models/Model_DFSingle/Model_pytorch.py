@@ -72,7 +72,7 @@ class SAEHDDFSingleModel(ModelBase):
         self.options['true_face_power'] = self.load_or_def_option('true_face_power', 0.0)
         self.options['gan_power'] = self.load_or_def_option('gan_power', 0.0)
         self.options['clipgrad'] = self.load_or_def_option('clipgrad', False)
-        self.options['pretrain'] = self.load_or_def_option('pretrain', False)
+        self.options['pretrain'] = False  # pretrain 已停用：无论读到什么一律强制 False
         self.options['lr_dropout'] = self.load_or_def_option('lr_dropout', 'n')
         self.options['use_bf16'] = self.load_or_def_option('use_bf16', False)
         self.options['uniform_yaw'] = self.load_or_def_option('uniform_yaw', False)
@@ -116,7 +116,7 @@ class SAEHDDFSingleModel(ModelBase):
                 self.options['d_mask_dims'] = int(np.clip(io.input_int('D mask dims', 22, add_info='16-256'), 16, 256))
 
         if (self.is_first_run() or ask_override) and _interactive:
-            self.options['pretrain'] = io.input_bool('启用预训练', self.options['pretrain'])
+            # pretrain 已停用：强制 False，不再提供询问入口
             self.options['random_warp'] = io.input_bool('启用 Random Warp', self.options['random_warp'])
             self.options['gan_power'] = float(np.clip(io.input_number('GAN 强度', 0.0, add_info='0.0..5.0'), 0.0, 5.0))
 

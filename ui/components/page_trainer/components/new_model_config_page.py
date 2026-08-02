@@ -585,7 +585,7 @@ class XSegTrainingConfigChildPage(SiChildPage):
                 if 'options' in data:
                     data['options']['batch_size'] = int(self.batch_size_input.text() or '4')
                     data['options']['use_bf16'] = self.use_bf16_switch.isChecked()
-                    data['options']['pretrain'] = self.pretrain_switch.isChecked()
+                    data['options']['pretrain'] = False  # pretrain 已停用：强制 False
                     data['options']['face_type'] = self.face_type_combo.currentText()
                     data['options']['loader_skip'] = self.fast_loader_switch.isChecked()
                     data['options']['use_compile'] = self.use_compile_switch.isChecked()

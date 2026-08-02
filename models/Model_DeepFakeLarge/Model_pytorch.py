@@ -390,7 +390,7 @@ class DeepFakeLargeModel(ModelBase):
         default_lr_policy = self.options['lr_policy'] = lr_policy
 
         default_clipgrad = self.options['clipgrad'] = self.load_or_def_option('clipgrad', False)
-        default_pretrain = self.options['pretrain'] = self.load_or_def_option('pretrain', False)
+        default_pretrain = self.options['pretrain'] = False  # pretrain 已停用：无论读到什么一律强制 False
         default_gan_power = self.options['gan_power'] = self.load_or_def_option('gan_power', 0.0)
         default_use_bf16 = self.options['use_bf16'] = self.load_or_def_option('use_bf16', False)
         default_gradient_checkpointing = self.options['gradient_checkpointing'] = self.load_or_def_option('gradient_checkpointing', False)

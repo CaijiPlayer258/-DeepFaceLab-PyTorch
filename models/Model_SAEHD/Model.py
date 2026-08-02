@@ -69,7 +69,7 @@ class SAEHDModel(ModelBase):
         default_bg_style_power     = self.options['bg_style_power']     = self.load_or_def_option('bg_style_power', 0.0)
         default_ct_mode            = self.options['ct_mode']            = self.load_or_def_option('ct_mode', 'none')
         default_clipgrad           = self.options['clipgrad']           = self.load_or_def_option('clipgrad', False)
-        default_pretrain           = self.options['pretrain']           = self.load_or_def_option('pretrain', False)
+        default_pretrain           = self.options['pretrain']           = False  # pretrain 已停用：无论读到什么一律强制 False
 
         ask_override = self.ask_override()
         if self.is_first_run() or ask_override:
@@ -186,7 +186,8 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
             self.options['ct_mode'] = io.input_str (f"src faceset 的颜色迁移模式", default_ct_mode, ['none','rct','lct','mkl','idt','sot'], help_message="将 src 样本的颜色分布调整得更接近 dst。建议逐个尝试以选择最佳模式。")
             self.options['clipgrad'] = io.input_bool ("启用梯度裁剪（clipgrad）", default_clipgrad, help_message="梯度裁剪可降低模型崩溃概率，但会牺牲训练速度。")
 
-            self.options['pretrain'] = io.input_bool ("启用预训练模式（pretrain）", default_pretrain, help_message="使用大量多样人脸进行预训练。之后可更快训练目标人物。该模式会强制：random_warp=N、random_flips=Y、gan_power=0.0、lr_dropout=N、styles=0.0、uniform_yaw=Y")
+            # pretrain 已停用：强制 False，不再提供询问入口
+            self.options['pretrain'] = False
 
         if self.options['pretrain'] and self.get_pretraining_data_path() is None:
             raise Exception("未设置 pretraining_data_path")

@@ -119,7 +119,7 @@ class SAEHDModel(ModelBase):
         default_vgg_perceptual_power = self.options['vgg_perceptual_power'] = self.load_or_def_option('vgg_perceptual_power', 0.0)
         default_ct_mode = self.options['ct_mode'] = self.load_or_def_option('ct_mode', 'none')
         default_clipgrad = self.options['clipgrad'] = self.load_or_def_option('clipgrad', False)
-        default_pretrain = self.options['pretrain'] = self.load_or_def_option('pretrain', False)
+        default_pretrain = self.options['pretrain'] = False  # pretrain 已停用：无论读到什么一律强制 False
 
         # Freeze layer options
         default_freeze_encoder = self.options['freeze_encoder'] = self.load_or_def_option('freeze_encoder', False)
@@ -444,11 +444,8 @@ class SAEHDModel(ModelBase):
                 help_message='梯度裁剪可降低模型崩溃概率，但会牺牲训练速度。',
             )
 
-            self.options['pretrain'] = io.input_bool(
-                '启用预训练模式（pretrain）',
-                default_pretrain,
-                help_message='使用大量多样人脸进行预训练。该模式会强制启用/关闭多项训练选项。',
-            )
+            # pretrain 已停用：强制 False，不再提供询问入口
+            self.options['pretrain'] = False
 
             self.ask_gradient_checkpointing()
 
