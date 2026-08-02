@@ -699,7 +699,7 @@ class SAEHDModel(ModelBase):
                 self._move_leras_model_to_device(item)
 
         # VGG 感知损失特征提取器（懒初始化）
-        self.vgg_perceptual_power = 0.0 if self.pretrain else float(self.options.get('vgg_perceptual_power', 50.0))
+        self.vgg_perceptual_power = 0.0 if self.pretrain else float(self.options.get('vgg_perceptual_power', 0.0))  # 默认 0.0：无 VGG 值时关闭
         self.vgg_extractor = None
         if self.is_training and self.vgg_perceptual_power > 0.0:
             try:

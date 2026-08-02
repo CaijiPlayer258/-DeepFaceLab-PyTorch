@@ -724,7 +724,7 @@ class TrainingConfigChildPage(SiChildPage):
             self.vgg_perceptual_power_card.load(safe_get_icon("ic_fluent_brain_circuit_filled"))
             self.vgg_perceptual_power_input = SiLabeledLineEdit(self.vgg_perceptual_power_card)
             self.vgg_perceptual_power_input.setTitle("0~100")
-            self.vgg_perceptual_power_input.setText("50.0")
+            self.vgg_perceptual_power_input.setText("0.0")
             self.vgg_perceptual_power_input.setFixedHeight(48)
             self.vgg_perceptual_power_input.resize(150, 48)
             self.vgg_perceptual_power_input.textChanged.connect(lambda: self.update_config('vgg_perceptual_power'))
@@ -1610,7 +1610,7 @@ class TrainingConfigChildPage(SiChildPage):
             'true_face_power': str(_(info, 'true_face_power', '0.0')),
             'face_style_power': str(_(info, 'face_style_power', '0.0')),
             'bg_style_power': str(_(info, 'bg_style_power', '0.0')),
-            'vgg_perceptual_power': str(_(info, 'vgg_perceptual_power', '50.0')),
+            'vgg_perceptual_power': str(_(info, 'vgg_perceptual_power', '0.0')),
             'crash_threshold': str(_(info, 'crash_threshold', '0.0')),
             'log_code_stats': str(_(info, 'log_code_stats', '0')),
             'max_backups': str(_(info, 'max_backups', '3')),
@@ -1689,7 +1689,7 @@ class TrainingConfigChildPage(SiChildPage):
         self.true_face_power_input.setText(str(cfg.get('true_face_power', '0.0')))
         self.face_style_power_input.setText(str(cfg.get('face_style_power', '0.0')))
         self.bg_style_power_input.setText(str(cfg.get('bg_style_power', '0.0')))
-        self.vgg_perceptual_power_input.setText(str(cfg.get('vgg_perceptual_power', '50.0')))
+        self.vgg_perceptual_power_input.setText(str(cfg.get('vgg_perceptual_power', '0.0')))
         self.gan_patch_size_input.setText(str(cfg.get('gan_patch_size', '32')))
         self.gan_dims_input.setText(str(cfg.get('gan_dims', '16')))
 
