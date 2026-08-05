@@ -139,7 +139,9 @@ class MySiliconApp(SiliconApplication):
                 _changelog = info.get("changelog", [])
                 if _changelog:
                     _lines.append("")
-                    for _ver, _notes in _changelog:
+                    # 只显示最新版本的更新信息（更新信息过长会把更新按钮挤出屏幕，
+                    # 照顾长时间未更新、突然想更新的用户）
+                    for _ver, _notes in _changelog[:1]:
                         _lines.append("【v%s】" % _ver)
                         _lines.extend("  " + n for n in _notes)
                         _lines.append("")
