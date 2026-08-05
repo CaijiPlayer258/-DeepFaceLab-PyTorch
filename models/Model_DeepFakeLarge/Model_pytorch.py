@@ -402,6 +402,7 @@ class DeepFakeLargeModel(ModelBase):
             self.options['freeze_decoderB_mask'] = True
         default_freeze_encoder = self.options['freeze_encoder'] = self.load_or_def_option('freeze_encoder', False)
         default_freeze_bottleneck = self.options['freeze_bottleneck'] = self.load_or_def_option('freeze_bottleneck', False)
+        default_freeze_decoderB = self.options['freeze_decoderB'] = self.load_or_def_option('freeze_decoderB', False)  # 冻结整个 dst 解码器（DF 架构专用）
 
         ask_override = self.ask_override()
         if self.is_first_run() or ask_override:
@@ -576,6 +577,11 @@ class DeepFakeLargeModel(ModelBase):
             if bool(self.options.get('freeze_encoder', False)):
                 frozen_ids |= {id(p) for p in self.net.encoder.parameters()}
             if bool(self.options.get('freeze_bottleneck', False)):
+                frozen_ids |= {id(p) for p in self.net.bottleneck.parameters()}
+            if bool(self.options.get('freeze_decoderB', False)):
+                frozen_ids |= {id(p) for p in self.net.decoderB.parameters()}
+                # 联动：同时冻结 encoder + bottleneck（用户习惯一起开，只精修 src 解码器）
+                frozen_ids |= {id(p) for p in self.net.encoder.parameters()}
                 frozen_ids |= {id(p) for p in self.net.bottleneck.parameters()}
             if frozen_ids:
                 train_params = [p for p in self.net.parameters() if id(p) not in frozen_ids]

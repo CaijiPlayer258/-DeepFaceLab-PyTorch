@@ -32,25 +32,37 @@ import warnings
 import subprocess  # FFmpeg pipe
 warnings.filterwarnings('ignore', module='onnxruntime')
 
-# 导入modelhub模块
-from modelhub.onnx import (
-    BlazeFace, CenterFace, S3FD, YoloV5Face,
-    InsightFace2D106, FaceMesh
-)
-from modelhub.onnx.YoloV8Face import YoloV8Face
-from modelhub.onnx.RetinaFace import RetinaFace
-from modelhub.onnx.DamoFD.DamoFD import DamoFD
-from modelhub.onnx.TinyMog.TinyMog import TinyMog
-from modelhub.onnx.ULFD.ULFD import ULFD
-from modelhub.onnx.MogFace.MogFace import MogFace
-from modelhub.onnx.MTCNN.MTCNN import MTCNN
-from modelhub.onnx.LightweightFD.LightweightFD import LightweightFD
-from modelhub.onnx.FAN import FAN
-from modelhub.onnx.InsightFace3D68 import InsightFace3D68
-from modelhub.onnx.OpenSeeFace.OpenSeeFace import OpenSeeFace as OpenSeeFaceLandmark
-from modelhub.onnx.PFLD.PFLD import PFLD as PFLDLandmark
-from modelhub.onnx.MobileFaceNet.MobileFaceNet import MobileFaceNet as MobileFaceNetLandmark
-from modelhub.onnx.YoloV11nFace.YoloV11nFace import YoloV11nFace
+# 导入modelhub模块（安全导入：单个模型缺失/导入失败不影响启动，缺失的模型不可选）
+def _safe_import(module_path: str, cls_name: str):
+    """安全导入 modelhub 模型类，失败返回 None（该模型不可用）。"""
+    try:
+        import importlib
+        return getattr(importlib.import_module(module_path), cls_name)
+    except Exception as e:
+        print(f'[Extractor] 模型 {module_path}.{cls_name} 导入失败，已跳过: {e}')
+        return None
+
+BlazeFace = _safe_import('modelhub.onnx.BlazeFace.BlazeFace', 'BlazeFace')
+CenterFace = _safe_import('modelhub.onnx.CenterFace.CenterFace', 'CenterFace')
+S3FD = _safe_import('modelhub.onnx.S3FD.S3FD', 'S3FD')
+YoloV5Face = _safe_import('modelhub.onnx.YoloV5Face.YoloV5Face', 'YoloV5Face')
+FastFaceAlign = _safe_import('modelhub.onnx.FastFaceAlign.FastFaceAlign', 'FastFaceAlign')
+InsightFace2D106 = _safe_import('modelhub.onnx.InsightFace2d106.InsightFace2D106', 'InsightFace2D106')
+FaceMesh = _safe_import('modelhub.onnx.FaceMesh.FaceMesh', 'FaceMesh')
+YoloV8Face = _safe_import('modelhub.onnx.YoloV8Face.YoloV8Face', 'YoloV8Face')
+RetinaFace = _safe_import('modelhub.onnx.RetinaFace.RetinaFace', 'RetinaFace')
+DamoFD = _safe_import('modelhub.onnx.DamoFD.DamoFD', 'DamoFD')
+TinyMog = _safe_import('modelhub.onnx.TinyMog.TinyMog', 'TinyMog')
+ULFD = _safe_import('modelhub.onnx.ULFD.ULFD', 'ULFD')
+MogFace = _safe_import('modelhub.onnx.MogFace.MogFace', 'MogFace')
+MTCNN = _safe_import('modelhub.onnx.MTCNN.MTCNN', 'MTCNN')
+LightweightFD = _safe_import('modelhub.onnx.LightweightFD.LightweightFD', 'LightweightFD')
+FAN = _safe_import('modelhub.onnx.FAN.FAN', 'FAN')
+InsightFace3D68 = _safe_import('modelhub.onnx.InsightFace3D68.InsightFace3D68', 'InsightFace3D68')
+OpenSeeFaceLandmark = _safe_import('modelhub.onnx.OpenSeeFace.OpenSeeFace', 'OpenSeeFace')
+PFLDLandmark = _safe_import('modelhub.onnx.PFLD.PFLD', 'PFLD')
+MobileFaceNetLandmark = _safe_import('modelhub.onnx.MobileFaceNet.MobileFaceNet', 'MobileFaceNet')
+YoloV11nFace = _safe_import('modelhub.onnx.YoloV11nFace.YoloV11nFace', 'YoloV11nFace')
 from xlib.onnxruntime import get_cpu_device_info, get_available_devices_info
 from facelib.LandmarksProcessor import get_transform_mat, get_canonical_68
 import facelib
@@ -115,9 +127,10 @@ def save_dfljpg(filepath, img, meta_dict):
 class DetectorFactory:
     """人脸检测器工厂类"""
     
-    DETECTORS = {
+    DETECTORS = {k: v for k, v in {
         'BlazeFace': BlazeFace,
         'CenterFace': CenterFace,
+        'FastFaceAlign': FastFaceAlign,
         'RetinaFace_10g': RetinaFace,
         'RetinaFace_500m': RetinaFace,
         'S3FD': S3FD,
@@ -130,7 +143,7 @@ class DetectorFactory:
         'MTCNN': MTCNN,
         'LightweightFD': LightweightFD,
         'YoloV11nFace': YoloV11nFace,
-    }
+    }.items() if v is not None}
 
     # RetinaFace 不同参数量的模型映射
     RETINAFACE_MODELS = {
@@ -161,7 +174,7 @@ class DetectorFactory:
 class LandmarkFactory:
     """特征点标记器工厂类"""
     
-    LANDMARKS = {
+    LANDMARKS = {k: v for k, v in {
         'insightface-2d106det': InsightFace2D106,
         '2DFAN-4': FAN,       # 2D FAN (68 pts, 256x256)
         '3DFAN-4': FAN,       # 3D FAN (68 pts, 256x256)
@@ -170,7 +183,7 @@ class LandmarkFactory:
         'OpenSeeFace': OpenSeeFaceLandmark,
         'PFLD': PFLDLandmark,
         'MobileFaceNet': MobileFaceNetLandmark,
-    }
+    }.items() if v is not None}
     
     @classmethod
     def create_landmarker(cls, landmark_name: str, device_info):
@@ -398,10 +411,12 @@ def detect_and_align_on_resized(detector, landmarker, image: np.ndarray, fixed_w
             kps_list = [item[1] for item in raw]
         else:
             # Original path — no keypoints
-            if isinstance(detector, (YoloV8Face, RetinaFace)):
+            _yolo_retina = tuple(t for t in (YoloV8Face, RetinaFace) if t is not None)
+            _fixed_win = tuple(t for t in (BlazeFace, YoloV5Face, CenterFace, S3FD) if t is not None)
+            if _yolo_retina and isinstance(detector, _yolo_retina):
                 results = detector.extract(working_image,
                                            input_mode=input_mode, resize_mode=resize_mode, input_size=input_size)
-            elif isinstance(detector, (BlazeFace, YoloV5Face, CenterFace, S3FD)):
+            elif _fixed_win and isinstance(detector, _fixed_win):
                 results = detector.extract(working_image, fixed_window=0,
                                            input_mode=input_mode, resize_mode=resize_mode, input_size=input_size)
             else:

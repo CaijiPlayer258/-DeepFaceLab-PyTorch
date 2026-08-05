@@ -46,7 +46,7 @@
 
 模型文件（检测器、特征点、换脸模型等）需从网盘下载后放入对应目录：
 
-**百度网盘：** https://pan.baidu.com/s/1CneT0PBmy_ARhrl4Mqp2cA?pwd=cjwj
+**百度网盘：** https://pan.baidu.com/s/1u7WULEl2glQmVCQXEkpX_g?pwd=cjwj
 
 下载后解压，将 `modelhub/` 目录复制到项目根目录覆盖即可。
 
@@ -321,7 +321,7 @@ python tools/export_onnx_to_trt.py --name model_name --batch 1
 ## 常见问题
 
 **Q: 模型从哪里下载？**
-A: 百度网盘 https://pan.baidu.com/s/1CneT0PBmy_ARhrl4Mqp2cA?pwd=cjwj
+A: 百度网盘 https://pan.baidu.com/s/1u7WULEl2glQmVCQXEkpX_g?pwd=cjwj
 
 **Q: 需要哪种 FFmpeg？**
 A: gyan.dev 的 full 静态版（含 libplacebo）。运行 `update_ffmpeg.bat` 自动下载。

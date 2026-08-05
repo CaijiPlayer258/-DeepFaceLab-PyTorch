@@ -64,11 +64,12 @@ def print_io_info(onnx_path):
     return model
 
 
-def build_engine(onnx_path, batch=1, workspace_gb=6, input_shapes=None):
-    """ONNX → TRT BF16 engine，返回 engine bytes。
+def build_engine(onnx_path, batch=1, workspace_gb=6, input_shapes=None, fp16=False):
+    """ONNX → TRT engine，返回 engine bytes。
 
     Args:
         input_shapes: dict {tensor_name: [h, w]} 或 None（未知维度默认 640）
+        fp16: 使用 FP16 精度（默认 BF16，TRT 11+）
     """
     # Build network
     flag = 1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH) \
@@ -99,8 +100,11 @@ def build_engine(onnx_path, batch=1, workspace_gb=6, input_shapes=None):
     config = builder.create_builder_config()
     config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, workspace_gb << 30)
 
-    # BF16
-    if hasattr(trt.BuilderFlag, 'BF16'):
+    # Precision: FP16（--fp16）或 BF16（默认，TRT 11+）
+    if fp16:
+        config.set_flag(trt.BuilderFlag.FP16)
+        print('├ FP16: enabled')
+    elif hasattr(trt.BuilderFlag, 'BF16'):
         config.set_flag(trt.BuilderFlag.BF16)
         print('├ BF16: enabled')
     else:
@@ -167,12 +171,31 @@ def save_engine(engine_bytes, onnx_path, name, batch=1, output_dir=None):
     return str(dst)
 
 
+def verify_engine(engine_path, input_shapes=None):
+    """加载 engine 并跑一次推理验证（抄自 FastFaceAlign export_trt.py --verify）。"""
+    from xlib.trt import TRTInferenceSession
+    sess = TRTInferenceSession(engine_path)
+    inp = sess.get_inputs()[0]
+    shape = [s if s > 0 else 1 for s in inp.shape]
+    if input_shapes and inp.name in input_shapes:
+        ov = input_shapes[inp.name]
+        for i in range(2, len(shape)):
+            if i - 2 < len(ov):
+                shape[i] = ov[i - 2]
+    x = np.random.randn(*shape).astype(np.float32)
+    outs = sess.run(None, {inp.name: x})
+    print(f'[verify] engine OK: {inp.name}{tuple(shape)} -> ' +
+          ', '.join(f'{o.shape}' for o in outs))
+
+
 def main():
-    p = argparse.ArgumentParser(description='ONNX → TensorRT BF16 Engine')
+    p = argparse.ArgumentParser(description='ONNX → TensorRT Engine (BF16/FP16)')
     p.add_argument('onnx', help='ONNX 模型路径')
     p.add_argument('--name', required=True, help='模型名（用于引擎文件名）')
     p.add_argument('--batch', type=int, default=1, help='最大 batch size（默认 1）')
     p.add_argument('--workspace', type=int, default=6, help='Workspace in GB（默认 6）')
+    p.add_argument('--fp16', action='store_true', help='使用 FP16 精度（默认 BF16）')
+    p.add_argument('--verify', action='store_true', help='编译后加载引擎做一次推理验证')
     p.add_argument('--output-dir', default=None, help='引擎输出目录（默认 ONNX 同目录）')
     p.add_argument('--input-shape', default=None, help='指定输入形状覆盖未知维度，格式: input_name:h,w。多个用;分割')
     p.add_argument('--info', action='store_true', help='仅打印 I/O 信息，不编译')
@@ -202,8 +225,10 @@ def main():
                 dims = [int(x) for x in dims_str.split(',')]
                 input_shapes[name] = dims
 
-    engine_bytes = build_engine(str(onnx_path), args.batch, args.workspace, input_shapes)
-    save_engine(engine_bytes, str(onnx_path), args.name, args.batch, args.output_dir)
+    engine_bytes = build_engine(str(onnx_path), args.batch, args.workspace, input_shapes, fp16=args.fp16)
+    dst = save_engine(engine_bytes, str(onnx_path), args.name, args.batch, args.output_dir)
+    if args.verify:
+        verify_engine(dst, input_shapes)
     print('Done.')
 
 

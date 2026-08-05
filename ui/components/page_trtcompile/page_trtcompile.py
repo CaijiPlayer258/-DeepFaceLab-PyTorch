@@ -48,6 +48,7 @@ _MODEL_LIST = [
     ("RetinaFace 10g",   "modelhub/onnx/RetinaFace/det_10g.onnx",        "det_10g"),
     ("RetinaFace 500m",  "modelhub/onnx/RetinaFace/det_500m.onnx",       "det_500m"),
     ("DamoFD",           "modelhub/onnx/DamoFD/DamoFD.onnx",              "DamoFD"),
+    ("FastFaceAlign",    "modelhub/onnx/FastFaceAlign/FastFaceAlign.onnx","FastFaceAlign"),
     ("TinyMog",          "modelhub/onnx/TinyMog/TinyMog.onnx",            "TinyMog"),
     ("ULFD",             "modelhub/onnx/ULFD/ULFD.onnx",                  "ULFD"),
     ("FaceEnhancer",     "modelhub/onnx/FaceEnhancer/FaceEnhancer.onnx",  "FaceEnhancer"),

@@ -935,6 +935,16 @@ class TrainingConfigChildPage(SiChildPage):
             self.freeze_decoder_mask_card.addWidget(self.freeze_decoder_mask_switch)
             self.freeze_decoder_mask_card.adjustSize()
 
+            # 冻结解码器Dst (DF 架构: SAEHD-df / DeepFakeLarge；两个解码器分离身份)
+            self.freeze_decoder_dst_card = SiOptionCardLinear(self)
+            self.freeze_decoder_dst_card.setTitle("冻结解码器Dst (Decoder Dst)", "冻结 dst 解码器（DF 架构专用）。训练后期主要训练 src 解码器，冻结 dst 可节省显存/算力")
+            self.freeze_decoder_dst_card.load(safe_get_icon("ic_fluent_eye_off_filled"))
+            self.freeze_decoder_dst_switch = SiSwitch(self.freeze_decoder_dst_card)
+            self.freeze_decoder_dst_switch.setChecked(False)
+            self.freeze_decoder_dst_switch.toggled.connect(self._on_freeze_decoder_dst_toggled)
+            self.freeze_decoder_dst_card.addWidget(self.freeze_decoder_dst_switch)
+            self.freeze_decoder_dst_card.adjustSize()
+
             # ======== DeepFakeLarge 专属冻结选项 ========
 
             # 冻结瓶颈层 (DeepFakeLarge)
@@ -1008,6 +1018,8 @@ class TrainingConfigChildPage(SiChildPage):
             self.freeze_bottleneck_card.setVisible(_fc_is_dflarge)
             self.freeze_decoderA_mask_card.setVisible(_fc_is_dflarge)
             self.freeze_decoderB_mask_card.setVisible(_fc_is_dflarge)
+            # 冻结解码器Dst：仅 DF 架构（SAEHD-df / DeepFakeLarge）；LIAE/LIAELarge/DFSingle 单解码器不适用
+            self.freeze_decoder_dst_card.setVisible((_fc_is_df and _fc_model_class != 'DFSingle') or _fc_is_dflarge)
             # LIAELarge 冻结组
             self.freeze_bottleneck_AB_card.setVisible(_fc_is_liaelarge)
             self.freeze_bottleneck_B_card.setVisible(_fc_is_liaelarge)
@@ -1018,6 +1030,7 @@ class TrainingConfigChildPage(SiChildPage):
                 group.addWidget(self.freeze_bottleneck_card)
                 group.addWidget(self.freeze_decoderA_mask_card)
                 group.addWidget(self.freeze_decoderB_mask_card)
+                group.addWidget(self.freeze_decoder_dst_card)
             elif _fc_is_liaelarge:
                 group.addWidget(self.freeze_bottleneck_AB_card)
                 group.addWidget(self.freeze_bottleneck_B_card)
@@ -1025,6 +1038,7 @@ class TrainingConfigChildPage(SiChildPage):
             elif _fc_is_df:
                 group.addWidget(self.freeze_inter_card)
                 group.addWidget(self.freeze_decoder_mask_card)
+                group.addWidget(self.freeze_decoder_dst_card)
             elif _fc_is_liae:
                 group.addWidget(self.freeze_inter_AB_card)
                 group.addWidget(self.freeze_inter_B_card)
@@ -1198,6 +1212,7 @@ class TrainingConfigChildPage(SiChildPage):
                             _fc_data['options']['freeze_bottleneck'] = self.freeze_bottleneck_switch.isChecked()
                             _fc_data['options']['freeze_decoderA_mask'] = self.freeze_decoderA_mask_switch.isChecked()
                             _fc_data['options']['freeze_decoderB_mask'] = self.freeze_decoderB_mask_switch.isChecked()
+                            _fc_data['options']['freeze_decoderB'] = self.freeze_decoder_dst_switch.isChecked()
                         elif _fc_model_class == 'LIAELarge':
                             _fc_data['options']['freeze_decoder_mask'] = self.freeze_decoder_mask_switch.isChecked()
                             _fc_data['options']['freeze_bottleneck_AB'] = self.freeze_bottleneck_AB_switch.isChecked()
@@ -1209,6 +1224,8 @@ class TrainingConfigChildPage(SiChildPage):
                                 _fc_data['options']['freeze_inter_B'] = self.freeze_inter_B_switch.isChecked()
                             else:
                                 _fc_data['options']['freeze_inter'] = self.freeze_inter_switch.isChecked()
+                                if _fc_model_class == 'SAEHD':
+                                    _fc_data['options']['freeze_decoder_dst'] = self.freeze_decoder_dst_switch.isChecked()
                         else:  # AMP
                             _fc_data['options']['freeze_decoder_mask'] = self.freeze_decoder_mask_switch.isChecked()
                             _fc_data['options']['freeze_inter_src'] = self.freeze_inter_src_switch.isChecked()
@@ -1490,6 +1507,18 @@ class TrainingConfigChildPage(SiChildPage):
                     cb.setChecked(idx in gpu_indices)
 
 
+    def _on_freeze_decoder_dst_toggled(self, state):
+        """冻结解码器Dst 开关联动：开启时同时冻结 encoder + inter/bottleneck
+        （用户习惯三者一起开，训练后期只精修 src 解码器）。"""
+        self.update_config('freeze_decoder_dst')
+        if state:
+            self.freeze_encoder_switch.setChecked(True)
+            _fc_model_class = self.model_info.get('class_name', 'SAEHD')
+            if _fc_model_class == 'DeepFakeLarge':
+                self.freeze_bottleneck_switch.setChecked(True)
+            else:
+                self.freeze_inter_switch.setChecked(True)
+
     @staticmethod
     def _opt(info, key, default):
         """从模型 info 获取值，'?' 或 None 时视为未找到，返回 default"""
@@ -1622,6 +1651,7 @@ class TrainingConfigChildPage(SiChildPage):
             # 冻结层参数（默认不冻结）
             'freeze_encoder': bool(_(info, 'freeze_encoder', False)),
             'freeze_decoder_mask': bool(_(info, 'freeze_decoder_mask', False)),
+            'freeze_decoder_dst': bool(_(info, 'freeze_decoder_dst', False) or _(info, 'freeze_decoderB', False)),
             'freeze_inter': bool(_(info, 'freeze_inter', False)),
             'freeze_inter_AB': bool(_(info, 'freeze_inter_AB', False)),
             'freeze_inter_B': bool(_(info, 'freeze_inter_B', False)),
@@ -1700,6 +1730,7 @@ class TrainingConfigChildPage(SiChildPage):
         # 冻结层开关
         self.freeze_encoder_switch.setChecked(bool(cfg.get("freeze_encoder", False)))
         self.freeze_decoder_mask_switch.setChecked(bool(cfg.get("freeze_decoder_mask", False)))
+        self.freeze_decoder_dst_switch.setChecked(bool(cfg.get("freeze_decoder_dst", False) or cfg.get("freeze_decoderB", False)))
         self.freeze_inter_switch.setChecked(bool(cfg.get("freeze_inter", False)))
         self.freeze_inter_AB_switch.setChecked(bool(cfg.get("freeze_inter_AB", False)))
         self.freeze_inter_B_switch.setChecked(bool(cfg.get("freeze_inter_B", False)))
@@ -1824,6 +1855,8 @@ class TrainingConfigChildPage(SiChildPage):
                     self.config_data[key] = self.freeze_inter_dst_switch.isChecked()
                 elif key == 'freeze_decoder_mask':
                     self.config_data[key] = self.freeze_decoder_mask_switch.isChecked()
+                elif key == 'freeze_decoder_dst':
+                    self.config_data[key] = self.freeze_decoder_dst_switch.isChecked()
                 # DeepFakeLarge
                 elif key == 'freeze_bottleneck':
                     self.config_data[key] = self.freeze_bottleneck_switch.isChecked()

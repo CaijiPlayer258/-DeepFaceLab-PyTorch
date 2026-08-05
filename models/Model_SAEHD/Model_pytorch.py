@@ -127,6 +127,7 @@ class SAEHDModel(ModelBase):
         default_freeze_inter_AB = self.options['freeze_inter_AB'] = self.load_or_def_option('freeze_inter_AB', False)
         default_freeze_inter_B = self.options['freeze_inter_B'] = self.load_or_def_option('freeze_inter_B', False)
         default_freeze_decoder_mask = self.options['freeze_decoder_mask'] = self.load_or_def_option('freeze_decoder_mask', False)
+        default_freeze_decoder_dst = self.options['freeze_decoder_dst'] = self.load_or_def_option('freeze_decoder_dst', False)  # 仅 DF 架构生效
 
         ask_override = self.ask_override()
         if self.is_first_run() or ask_override:
@@ -896,6 +897,22 @@ class SAEHDModel(ModelBase):
                                 for w in _ml.get_weights():
                                     if hasattr(w, 'requires_grad'):
                                         w.requires_grad_(False)
+            # 冻结 dst 解码器（仅 DF 架构：两个解码器分离身份；LIAE 单解码器不适用）
+            # 联动：开启 freeze_decoder_dst 时同时冻结 encoder + inter（用户习惯一起开，
+            # 训练后期只精修 src 解码器，配合 src-only 前向完全跳过 dst 训练）
+            freeze_ddst = bool(self.options.get('freeze_decoder_dst', False))
+            if freeze_ddst and 'df' in self.archi_type:
+                if hasattr(self, 'decoder_dst'):
+                    for w in self.decoder_dst.get_weights():
+                        if hasattr(w, 'requires_grad'):
+                            w.requires_grad_(False)
+                for w in self.encoder.get_weights():
+                    if hasattr(w, 'requires_grad'):
+                        w.requires_grad_(False)
+                if hasattr(self, 'inter'):
+                    for w in self.inter.get_weights():
+                        if hasattr(w, 'requires_grad'):
+                            w.requires_grad_(False)
             # Update module info for user-frozen layers
             for i, (nm, pc, st) in enumerate(self._module_info_list):
                 if st != '已冻结':  # don't overwrite GAN freeze status
@@ -905,6 +922,7 @@ class SAEHDModel(ModelBase):
                         or (freeze_int_ab and nm == 'inter_AB')
                         or (freeze_int_b and nm == 'inter_B')
                         or (freeze_dm and nm.endswith('_mask'))
+                        or (freeze_ddst and nm in ('decoder_dst', 'encoder', 'inter'))
                     )
                     if user_frozen:
                         self._module_info_list[i] = (nm, pc, '已冻结')
@@ -1353,6 +1371,17 @@ class SAEHDModel(ModelBase):
             'pred_src_dst_no_code_grad': pred_src_dst_no_code_grad,
         }
 
+    def _forward_df_src_only(self, warped_src):
+        """冻结 decoder_dst 时的训练前向：只跑 src 分支（encoder+inter+decoder_src），
+        完全跳过 dst 前向，反向也只经过 src 分支（真正提速）。预览走 AE_view 不受影响。"""
+        src_code = self.inter(self.encoder(warped_src))
+        pred_src_src, pred_src_srcm = self.decoder_src(src_code)
+        return {
+            'src_code': src_code,
+            'pred_src_src': pred_src_src,
+            'pred_src_srcm': pred_src_srcm,
+        }
+
     def _forward_liae(self, warped_src, warped_dst):
         src_code = self.encoder(warped_src)
         src_inter_ab = self.inter_AB(src_code)
@@ -1383,16 +1412,21 @@ class SAEHDModel(ModelBase):
         }
 
     # --- losses ---
-    def _recon_losses(self, target_src, target_dst, target_srcm, target_dstm, target_srcm_em, target_dstm_em, fw):
+    def _recon_losses(self, target_src, target_dst, target_srcm, target_dstm, target_srcm_em, target_dstm_em, fw, skip_dst=False):
         resolution = self.resolution
 
         pred_src_src = fw['pred_src_src']
         pred_src_srcm = fw['pred_src_srcm']
-        pred_dst_dst = fw['pred_dst_dst']
-        pred_dst_dstm = fw['pred_dst_dstm']
-        pred_src_dst = fw['pred_src_dst']
-        pred_src_dstm = fw['pred_src_dstm']
-        pred_src_dst_no_code_grad = fw['pred_src_dst_no_code_grad']
+        if skip_dst:
+            pred_dst_dst = pred_dst_dstm = None
+            pred_src_dst = pred_src_dstm = None
+            pred_src_dst_no_code_grad = None
+        else:
+            pred_dst_dst = fw['pred_dst_dst']
+            pred_dst_dstm = fw['pred_dst_dstm']
+            pred_src_dst = fw['pred_src_dst']
+            pred_src_dstm = fw['pred_src_dstm']
+            pred_src_dst_no_code_grad = fw['pred_src_dst_no_code_grad']
 
         # mask blur
         k_blur = max(1, resolution // 32)
@@ -1416,7 +1450,7 @@ class SAEHDModel(ModelBase):
         target_src_masked_opt = target_src * target_srcm_blur if self.masked_training else target_src
         target_dst_masked_opt = target_dst_masked if self.masked_training else target_dst
         pred_src_src_masked_opt = pred_src_src * target_srcm_blur if self.masked_training else pred_src_src
-        pred_dst_dst_masked_opt = pred_dst_dst * target_dstm_blur if self.masked_training else pred_dst_dst
+        pred_dst_dst_masked_opt = pred_dst_dst * target_dstm_blur if (self.masked_training and not skip_dst) else target_dst
 
         def dssim_loss(a, b, fs, w):
             v = nn.dssim(a, b, max_val=1.0, filter_size=fs)
@@ -1433,24 +1467,27 @@ class SAEHDModel(ModelBase):
 
         if resolution < 256:
             src_loss = dssim_loss(target_src_masked_opt, pred_src_src_masked_opt, fs1, 10)
-            dst_loss = dssim_loss(target_dst_masked_opt, pred_dst_dst_masked_opt, fs1, 10)
+            dst_loss = dssim_loss(target_dst_masked_opt, pred_dst_dst_masked_opt, fs1, 10) if not skip_dst else torch.zeros_like(src_loss)
         else:
             src_loss = dssim_loss(target_src_masked_opt, pred_src_src_masked_opt, fs1, 5) + dssim_loss(
                 target_src_masked_opt, pred_src_src_masked_opt, fs2, 5
             )
-            dst_loss = dssim_loss(target_dst_masked_opt, pred_dst_dst_masked_opt, fs1, 5) + dssim_loss(
+            dst_loss = (dssim_loss(target_dst_masked_opt, pred_dst_dst_masked_opt, fs1, 5) + dssim_loss(
                 target_dst_masked_opt, pred_dst_dst_masked_opt, fs2, 5
-            )
+            )) if not skip_dst else torch.zeros_like(src_loss)
 
         src_loss = src_loss + mse(target_src_masked_opt, pred_src_src_masked_opt, 10)
-        dst_loss = dst_loss + mse(target_dst_masked_opt, pred_dst_dst_masked_opt, 10)
+        if not skip_dst:
+            dst_loss = dst_loss + mse(target_dst_masked_opt, pred_dst_dst_masked_opt, 10)
 
         if self.eyes_mouth_prio:
             src_loss = src_loss + l1(target_src * target_srcm_em, pred_src_src * target_srcm_em, 300)
-            dst_loss = dst_loss + l1(target_dst * target_dstm_em, pred_dst_dst * target_dstm_em, 300)
+            if not skip_dst:
+                dst_loss = dst_loss + l1(target_dst * target_dstm_em, pred_dst_dst * target_dstm_em, 300)
 
         src_loss = src_loss + mse(target_srcm, pred_src_srcm, 10)
-        dst_loss = dst_loss + mse(target_dstm, pred_dst_dstm, 10)
+        if not skip_dst:
+            dst_loss = dst_loss + mse(target_dstm, pred_dst_dstm, 10)
 
         # VGG 感知损失（在全图未遮罩的 pred/target 上计算）
         vgg_perceptual_power = self.vgg_perceptual_power
@@ -1458,13 +1495,15 @@ class SAEHDModel(ModelBase):
             vgg_weight = vgg_perceptual_power / 50.0  # 50=等权，100=2x，25=0.5x
             with torch.no_grad():
                 target_src_vgg = self.vgg_extractor(target_src)
-                target_dst_vgg = self.vgg_extractor(target_dst)
+                if not skip_dst:
+                    target_dst_vgg = self.vgg_extractor(target_dst)
             pred_src_vgg = self.vgg_extractor(pred_src_src)
-            pred_dst_vgg = self.vgg_extractor(pred_dst_dst)
             src_vgg_loss = sum(F.l1_loss(pf, tf) for pf, tf in zip(pred_src_vgg, target_src_vgg))
-            dst_vgg_loss = sum(F.l1_loss(pf, tf) for pf, tf in zip(pred_dst_vgg, target_dst_vgg))
             src_loss = src_loss + vgg_weight * src_vgg_loss
-            dst_loss = dst_loss + vgg_weight * dst_vgg_loss
+            if not skip_dst:
+                pred_dst_vgg = self.vgg_extractor(pred_dst_dst)
+                dst_vgg_loss = sum(F.l1_loss(pf, tf) for pf, tf in zip(pred_dst_vgg, target_dst_vgg))
+                dst_loss = dst_loss + vgg_weight * dst_vgg_loss
 
         # style losses
         face_style_power = float(self.options['face_style_power']) / 100.0
@@ -1472,7 +1511,7 @@ class SAEHDModel(ModelBase):
 
         extra_style_loss = torch.tensor(0.0, device=self.device)
 
-        if face_style_power != 0.0 and not self.pretrain:
+        if face_style_power != 0.0 and not self.pretrain and not skip_dst:
             extra_style_loss = extra_style_loss + nn.style_loss(
                 pred_src_dst_no_code_grad * pred_src_dstm.detach(),
                 pred_dst_dst.detach() * pred_dst_dstm.detach(),
@@ -1480,7 +1519,7 @@ class SAEHDModel(ModelBase):
                 loss_weight=10000.0 * face_style_power,
             )
 
-        if bg_style_power != 0.0 and not self.pretrain:
+        if bg_style_power != 0.0 and not self.pretrain and not skip_dst:
             target_dst_style_anti_masked = target_dst * style_mask_anti_blur
             psd_style_anti_masked = pred_src_dst * style_mask_anti_blur
             extra_style_loss = extra_style_loss + (
@@ -1531,16 +1570,22 @@ class SAEHDModel(ModelBase):
             y = torch.where(y == 0, torch.ones_like(y), y)
             target_dst = target_dst * target_dstm + (x / y) * dstm_anti
 
-        with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=self.use_bf16):
-            if 'df' in self.archi_type:
-                fw_fn = self._forward_df
-            else:
-                fw_fn = self._forward_liae
+        # 冻结 decoder_dst（DF 架构）：训练只跑 src 分支，前向+反向完全跳过 dst（真正提速）
+        _freeze_ddst = ('df' in self.archi_type) and bool(self.options.get('freeze_decoder_dst', False))
 
-            if self.options.get('gradient_checkpointing', False) and self.is_training:
-                fw = torch.utils.checkpoint.checkpoint(fw_fn, warped_src, warped_dst, use_reentrant=False)
+        with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=self.use_bf16):
+            if _freeze_ddst:
+                fw = self._forward_df_src_only(warped_src)
             else:
-                fw = fw_fn(warped_src, warped_dst)
+                if 'df' in self.archi_type:
+                    fw_fn = self._forward_df
+                else:
+                    fw_fn = self._forward_liae
+
+                if self.options.get('gradient_checkpointing', False) and self.is_training:
+                    fw = torch.utils.checkpoint.checkpoint(fw_fn, warped_src, warped_dst, use_reentrant=False)
+                else:
+                    fw = fw_fn(warped_src, warped_dst)
 
         if self.use_bf16:
             fw = {k: (v.float() if isinstance(v, torch.Tensor) else v) for k, v in fw.items()}
@@ -1558,6 +1603,7 @@ class SAEHDModel(ModelBase):
 
         src_loss_vec, dst_loss_vec, extra_style_loss, extra_masked_gan_loss = self._recon_losses(
             target_src, target_dst, target_srcm, target_dstm, target_srcm_em, target_dstm_em, fw,
+            skip_dst=_freeze_ddst,
         )
 
         G_loss = src_loss_vec.mean() + dst_loss_vec.mean() + extra_style_loss + extra_masked_gan_loss
@@ -1565,7 +1611,7 @@ class SAEHDModel(ModelBase):
         # true_face (DF only)
         true_face_power = float(self.options['true_face_power'])
         D_code_loss = None
-        if true_face_power != 0.0 and not self.pretrain and 'df' in self.archi_type:
+        if true_face_power != 0.0 and not self.pretrain and 'df' in self.archi_type and not _freeze_ddst:
             src_code_d = self.code_discriminator(fw['src_code'])
             dst_code_d = self.code_discriminator(fw['dst_code'])
 
@@ -1648,7 +1694,11 @@ class SAEHDModel(ModelBase):
             target_dst = target_dst * target_dstm + (x / y) * dstm_anti
 
         # forward (XLA device, no autocast needed)
-        if 'df' in self.archi_type:
+        # 冻结 decoder_dst（DF 架构）：训练只跑 src 分支
+        _freeze_ddst = ('df' in self.archi_type) and bool(self.options.get('freeze_decoder_dst', False))
+        if _freeze_ddst:
+            fw = self._forward_df_src_only(warped_src)
+        elif 'df' in self.archi_type:
             fw = self._forward_df(warped_src, warped_dst)
         else:
             fw = self._forward_liae(warped_src, warped_dst)
@@ -1656,13 +1706,14 @@ class SAEHDModel(ModelBase):
         # losses
         src_loss_vec, dst_loss_vec, extra_style_loss, extra_masked_gan_loss = self._recon_losses(
             target_src, target_dst, target_srcm, target_dstm, target_srcm_em, target_dstm_em, fw,
+            skip_dst=_freeze_ddst,
         )
         G_loss = src_loss_vec.mean() + dst_loss_vec.mean() + extra_style_loss + extra_masked_gan_loss
 
         # true_face (DF only)
         true_face_power = float(self.options['true_face_power'])
         D_code_loss = None
-        if true_face_power != 0.0 and not self.pretrain and 'df' in self.archi_type:
+        if true_face_power != 0.0 and not self.pretrain and 'df' in self.archi_type and not _freeze_ddst:
             src_code_d = self.code_discriminator(fw['src_code'])
             dst_code_d = self.code_discriminator(fw['dst_code'])
             ones_src = torch.ones_like(src_code_d)

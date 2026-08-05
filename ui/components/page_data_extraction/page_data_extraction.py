@@ -217,6 +217,7 @@ class DataExtractionPage(SiPage):
                             "BlazeFace",
                             "CenterFace",
                             "DamoFD",
+                            "FastFaceAlign",
                             "LightweightFD",
                             "MogFace",
                             "MTCNN",
@@ -580,6 +581,7 @@ class DataExtractionPage(SiPage):
         detector_mode_notes = {
             'BlazeFace': ' [适合滑窗]',
             'MTCNN': ' [适合滑窗]',
+            'FastFaceAlign': ' [适合One-Stage]',
             'RetinaFace_10g': ' [适合One-Stage]',
             'RetinaFace_500m': ' [适合One-Stage]',
             'DamoFD': ' [适合One-Stage]',

@@ -46,7 +46,7 @@
 
 Model weights (detectors, landmarks, face models etc.) need to be downloaded separately:
 
-**Baidu Pan:** https://pan.baidu.com/s/1CneT0PBmy_ARhrl4Mqp2cA?pwd=cjwj
+**Baidu Pan:** https://pan.baidu.com/s/1u7WULEl2glQmVCQXEkpX_g?pwd=cjwj
 
 Extract and copy the `modelhub/` directory to the project root.
 
@@ -296,7 +296,7 @@ python tools/export_onnx_to_trt.py --name model_name --batch 1
 ## FAQ
 
 **Q: Where to download models?**
-A: Baidu Pan: https://pan.baidu.com/s/1CneT0PBmy_ARhrl4Mqp2cA?pwd=cjwj
+A: Baidu Pan: https://pan.baidu.com/s/1u7WULEl2glQmVCQXEkpX_g?pwd=cjwj
 
 **Q: Which FFmpeg do I need?**
 A: gyan.dev full static build (with libplacebo). Run `update_ffmpeg.bat`.
